@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AEROPEN | The Art of Weightless Precision</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brandDark: '#0B0D11',
+            brandCard: '#13171F',
+            brandGold: '#D4AF37',
+            brandGoldHover: '#B89628',
+            brandMuted: '#94A3B8'
+          },
+          fontFamily: {
+            serif: ['"Cormorant Garamond"', 'serif'],
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="bg-brandDark text-slate-100 font-sans antialiased selection:bg-brandGold selection:text-black">
+
+  <!-- Floating Navigation -->
+  <nav class="fixed top-0 inset-x-0 z-40 bg-brandDark/80 backdrop-blur-md border-b border-white/10">
+    <div class="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
+      <a href="#" class="flex items-center gap-2">
+        <span class="font-serif text-3xl font-bold tracking-widest text-brandGold uppercase">AEROPEN</span>
+      </a>
+      <div class="hidden md:flex items-center gap-8 text-sm font-medium tracking-wider uppercase text-slate-300">
+        <a href="#collection" class="hover:text-brandGold transition">Collection</a>
+        <a href="#about" class="hover:text-brandGold transition">Our Heritage</a>
+        <a href="#contact" class="hover:text-brandGold transition">Concierge</a>
+      </div>
+      <div>
+        <a href="#collection" class="px-5 py-2.5 rounded-full border border-brandGold/40 hover:border-brandGold bg-brandGold/10 text-brandGold hover:bg-brandGold hover:text-black transition text-xs font-semibold uppercase tracking-wider">
+          Explore Pens
+        </a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Hero Section -->
+  <header class="relative min-h-[90vh] flex items-center justify-center pt-24 px-6 overflow-hidden">
+    <div class="absolute -top-40 -left-40 w-96 h-96 bg-brandGold/10 rounded-full blur-[120px] pointer-events-none"></div>
+    <div class="absolute bottom-0 right-0 w-96 h-96 bg-cyan-500/5 rounded-full blur-[140px] pointer-events-none"></div>
+
+    <div class="max-w-4xl mx-auto text-center relative z-10">
+      <span class="inline-block py-1 px-4 rounded-full border border-brandGold/30 bg-brandGold/5 text-brandGold text-xs uppercase tracking-[0.25em] mb-6">
+        Mastercrafted Writing Instruments
+      </span>
+      <h1 class="font-serif text-5xl md:text-7xl lg:text-8xl font-normal tracking-tight text-white leading-tight">
+        The weightless grace of every stroke.
+      </h1>
+      <p class="mt-6 text-lg md:text-xl text-brandMuted font-light max-w-2xl mx-auto leading-relaxed">
+        Aeropen merges aerospace-grade ergonomics with timeless penmanship. Designed for visionary thoughts, historic signatures, and enduring elegance.
+      </p>
+      <div class="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
+        <a href="#collection" class="w-full sm:w-auto px-8 py-4 rounded-full bg-brandGold text-black font-semibold text-sm tracking-wider uppercase hover:bg-brandGoldHover transition shadow-lg shadow-brandGold/20">
+          Browse Collection
+        </a>
+        <a href="#about" class="w-full sm:w-auto px-8 py-4 rounded-full border border-white/20 hover:border-white/50 text-slate-200 text-sm tracking-wider uppercase transition">
+          Discover Aeropen
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Pen Collection Section -->
+  <section id="collection" class="py-24 px-6 max-w-7xl mx-auto">
+    <div class="flex flex-col md:flex-row md:items-end justify-between mb-16">
+      <div>
+        <p class="text-brandGold text-xs uppercase tracking-[0.25em]">Catalog & Editions</p>
+        <h2 class="font-serif text-4xl md:text-5xl text-white mt-2">Curated Pen Showcase</h2>
+      </div>
+      <p class="text-brandMuted text-sm max-w-md mt-4 md:mt-0 font-light">
+        Every pen is checked for balance, ink flow viscosity, and tactile balance prior to shipment.
+      </p>
+    </div>
+
+    <!-- Product Grid -->
+    <div id="pens-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+      <!-- Loading skeletons will be replaced dynamically -->
+      <div class="text-center py-12 text-brandMuted col-span-full">Loading Aeropen collection...</div>
+    </div>
+  </section>
+
+  <!-- About Us Section -->
+  <section id="about" class="py-24 bg-brandCard/40 border-y border-white/5 relative">
+    <div class="max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+      <div>
+        <span class="text-brandGold text-xs uppercase tracking-[0.25em]">The Philosophy</span>
+        <h2 class="font-serif text-4xl md:text-5xl text-white mt-3 leading-tight">
+          Where engineering precision meets the soul of handwriting.
+        </h2>
+        <div class="mt-6 space-y-4 text-brandMuted leading-relaxed font-light">
+          <p>
+            At Aeropen, we believe a pen is not merely a tool for marking paper—it is an intimate conduit for ideas, treaties, literature, and dreams.
+          </p>
+          <p>
+            Taking cues from aviation aerodynamics, each pen in our collection is weighted to shift resistance away from the wrist, enabling an uninterrupted flow of thought. From micro-machined threads to hand-tuned nibs, our commitment is simple: creating an instrument you will cherish for generations.
+          </p>
+        </div>
+
+        <div class="grid grid-cols-3 gap-6 mt-10 pt-8 border-t border-white/10 text-center">
+          <div>
+            <div class="font-serif text-3xl text-brandGold">100%</div>
+            <div class="text-xs uppercase tracking-wider text-slate-400 mt-1">Inspected</div>
+          </div>
+          <div>
+            <div class="font-serif text-3xl text-brandGold">0.02mm</div>
+            <div class="text-xs uppercase tracking-wider text-slate-400 mt-1">Nib Tolerance</div>
+          </div>
+          <div>
+            <div class="font-serif text-3xl text-brandGold">Lifetime</div>
+            <div class="text-xs uppercase tracking-wider text-slate-400 mt-1">Care Promise</div>
+          </div>
+        </div>
+      </div>
+      <div class="relative">
+        <div class="w-full h-96 md:h-[480px] rounded-2xl overflow-hidden border border-white/10 shadow-2xl relative">
+          <img src="https://images.unsplash.com/photo-1585336261026-77cc7c balance?q=80&w=1200&auto=format&fit=crop" 
+               alt="Aeropen Craftsmanship" 
+               class="w-full h-full object-cover grayscale hover:grayscale-0 transition duration-700">
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Contact Us Section -->
+  <section id="contact" class="py-24 px-6 max-w-5xl mx-auto">
+    <div class="text-center mb-16">
+      <span class="text-brandGold text-xs uppercase tracking-[0.25em]">Personal Concierge</span>
+      <h2 class="font-serif text-4xl md:text-5xl text-white mt-2">Connect With Aeropen</h2>
+      <p class="text-brandMuted text-sm mt-3 font-light">
+        Have questions regarding ink compatibility, nib sizes, or custom corporate engravings? Reach out directly.
+      </p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+      <!-- Direct Contact Card -->
+      <div class="bg-brandCard p-8 rounded-2xl border border-white/10 flex flex-col justify-between">
+        <div>
+          <h3 class="font-serif text-2xl text-white mb-6">Direct Line & Office</h3>
+          
+          <div class="space-y-6 text-sm">
+            <div class="flex items-start gap-4">
+              <div class="w-10 h-10 rounded-full bg-brandGold/10 flex items-center justify-center text-brandGold">
+                <i class="fa-solid fa-phone"></i>
+              </div>
+              <div>
+                <p class="text-slate-400 text-xs uppercase tracking-wider">Customer Support Phone</p>
+                <a href="tel:+18005550199" class="text-white text-lg font-semibold hover:text-brandGold transition">
+                  +1 (800) 555-0199 / +91 98765 43210
+                </a>
+                <p class="text-brandMuted text-xs mt-0.5">Available Mon – Sat, 9:00 AM – 7:00 PM</p>
+              </div>
+            </div>
+
+            <div class="flex items-start gap-4">
+              <div class="w-10 h-10 rounded-full bg-brandGold/10 flex items-center justify-center text-brandGold">
+                <i class="fa-solid fa-envelope"></i>
+              </div>
+              <div>
+                <p class="text-slate-400 text-xs uppercase tracking-wider">Direct Email</p>
+                <a href="mailto:concierge@aeropen.com" class="text-white hover:text-brandGold transition">
+                  concierge@aeropen.com
+                </a>
+              </div>
+            </div>
+
+            <div class="flex items-start gap-4">
+              <div class="w-10 h-10 rounded-full bg-brandGold/10 flex items-center justify-center text-brandGold">
+                <i class="fa-solid fa-location-dot"></i>
+              </div>
+              <div>
+                <p class="text-slate-400 text-xs uppercase tracking-wider">Aeropen Studio</p>
+                <p class="text-white">Precision Works Building, Atelier Suite 4B</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-8 pt-6 border-t border-white/5 text-xs text-brandMuted">
+          <i class="fa-solid fa-truck-fast text-brandGold mr-2"></i> All orders are shipped via insured express courier with real-time dispatch updates.
+        </div>
+      </div>
+
+      <!-- Quick Message Form -->
+      <div class="bg-brandCard p-8 rounded-2xl border border-white/10">
+        <h3 class="font-serif text-2xl text-white mb-6">Send an Inquiry</h3>
+        <form onsubmit="event.preventDefault(); alert('Thank you. An Aeropen representative will call you shortly.'); this.reset();" class="space-y-4 text-sm">
+          <div>
+            <label class="block text-slate-400 text-xs mb-1">Your Full Name</label>
+            <input type="text" required class="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-3 text-white focus:border-brandGold outline-none" placeholder="Lord Byron">
+          </div>
+          <div>
+            <label class="block text-slate-400 text-xs mb-1">Phone Number</label>
+            <input type="tel" required class="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-3 text-white focus:border-brandGold outline-none" placeholder="+1 (555) 000-0000">
+          </div>
+          <div>
+            <label class="block text-slate-400 text-xs mb-1">Message or Query</label>
+            <textarea rows="3" class="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-3 text-white focus:border-brandGold outline-none" placeholder="I'd like to ask about pen refill options..."></textarea>
+          </div>
+          <button type="submit" class="w-full py-3 rounded-lg bg-white/10 hover:bg-brandGold hover:text-black font-semibold uppercase text-xs tracking-wider transition">
+            Submit Inquiry
+          </button>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="border-t border-white/10 py-12 px-6 text-center text-xs text-brandMuted">
+    <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
+      <div class="font-serif text-xl text-brandGold tracking-widest">AEROPEN</div>
+      <p>&copy; <span id="year"></span> Aeropen Instruments Inc. All Rights Reserved. Crafted for seamless writing.</p>
+      <div class="flex gap-4">
+        <a href="/admin.html" class="hover:text-brandGold transition">Admin Portal</a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- ORDER MODAL (Pay on Delivery / Direct Dispatch) -->
+  <div id="order-modal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden items-center justify-center p-4">
+    <div class="bg-[#11141A] border border-white/20 rounded-2xl max-w-lg w-full max-h-[92vh] overflow-y-auto p-6 md:p-8 relative shadow-2xl">
+      <button onclick="closeOrderModal()" class="absolute top-6 right-6 text-slate-400 hover:text-white text-xl">&times;</button>
+      
+      <span class="text-brandGold text-xs uppercase tracking-widest">Direct Order Request</span>
+      <h3 id="modal-pen-title" class="font-serif text-3xl text-white mt-1">Aeropen</h3>
+      <p id="modal-pen-price" class="text-brandGold text-lg font-semibold mt-1"></p>
+
+      <div class="my-4 p-3 bg-brandGold/10 border border-brandGold/20 rounded-lg text-xs text-slate-300">
+        <i class="fa-solid fa-circle-info text-brandGold mr-1"></i> No online payment required today. Submit your shipping details and our dispatch team will process your order for delivery.
+      </div>
+
+      <form id="order-form" onsubmit="submitOrder(event)" class="space-y-4 text-sm mt-4">
+        <input type="hidden" id="order-product-id">
+        <input type="hidden" id="order-product-title">
+
+        <div>
+          <label class="block text-slate-400 text-xs mb-1">Full Name *</label>
+          <input type="text" id="cust-name" required placeholder="Alexander Wright" class="w-full bg-black/50 border border-white/10 rounded-lg px-4 py-2.5 text-white focus:border-brandGold outline-none">
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-slate-400 text-xs mb-1">Contact Phone *</label>
+            <input type="tel" id="cust-phone" required placeholder="9876543210" class="w-full bg-black/50 border border-white/10 rounded-lg px-4 py-2.5 text-white focus:border-brandGold outline-none">
+          </div>
+          <div>
+            <label class="block text-slate-400 text-xs mb-1">Email Address</label>
+            <input type="email" id="cust-email" placeholder="alexander@domain.com" class="w-full bg-black/50 border border-white/10 rounded-lg px-4 py-2.5 text-white focus:border-brandGold outline-none">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-slate-400 text-xs mb-1">Delivery Address (House/Street/Area) *</label>
+          <textarea id="cust-address" required rows="2" placeholder="Suite 12, King Street, Central Avenue" class="w-full bg-black/50 border border-white/10 rounded-lg px-4 py-2.5 text-white focus:border-brandGold outline-none"></textarea>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-slate-400 text-xs mb-1">City *</label>
+            <input type="text" id="cust-city" required placeholder="New York / Mumbai" class="w-full bg-black/50 border border-white/10 rounded-lg px-4 py-2.5 text-white focus:border-brandGold outline-none">
+          </div>
+          <div>
+            <label class="block text-slate-400 text-xs mb-1">Postal / Pincode *</label>
+            <input type="text" id="cust-pincode" required placeholder="10001 / 400001" class="w-full bg-black/50 border border-white/10 rounded-lg px-4 py-2.5 text-white focus:border-brandGold outline-none">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-slate-400 text-xs mb-1">Quantity</label>
+            <input type="number" id="cust-qty" value="1" min="1" max="10" class="w-full bg-black/50 border border-white/10 rounded-lg px-4 py-2.5 text-white focus:border-brandGold outline-none">
+          </div>
+          <div>
+            <label class="block text-slate-400 text-xs mb-1">Special Notes / Nib Size</label>
+            <input type="text" id="cust-notes" placeholder="Fine / Medium nib" class="w-full bg-black/50 border border-white/10 rounded-lg px-4 py-2.5 text-white focus:border-brandGold outline-none">
+          </div>
+        </div>
+
+        <button type="submit" id="submit-order-btn" class="w-full mt-6 py-3.5 rounded-lg bg-brandGold text-black font-semibold uppercase text-xs tracking-widest hover:bg-brandGoldHover transition shadow-lg">
+          Confirm & Place Order
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    document.getElementById('year').innerText = new Date().getFullYear();
+
+    // Fetch and display products
+    async function loadPens() {
+      const grid = document.getElementById('pens-grid');
+      try {
+        const res = await fetch('/api/products');
+        const pens = await res.json();
+
+        if (pens.length === 0) {
+          grid.innerHTML = `<div class="col-span-full text-center text-brandMuted py-12">New collections are being curated. Check back soon.</div>`;
+          return;
+        }
+
+        grid.innerHTML = pens.map(pen => `
+          <div class="bg-brandCard border border-white/10 rounded-2xl overflow-hidden hover:border-brandGold/50 transition-all duration-300 group flex flex-col justify-between">
+            <div class="relative overflow-hidden aspect-[4/3] bg-black/30">
+              <img src="${pen.image_url || 'https://images.unsplash.com/photo-1583485088034-697b5bc54ccd?q=80&w=1000'}" 
+                   alt="${pen.title}" 
+                   class="w-full h-full object-cover group-hover:scale-105 transition duration-500">
+              <span class="absolute top-4 left-4 bg-black/70 backdrop-blur-sm text-[10px] uppercase tracking-widest font-semibold px-3 py-1 rounded-full text-brandGold border border-brandGold/20">
+                ${pen.category || 'Luxury Edition'}
+              </span>
+            </div>
+            <div class="p-6 flex-1 flex flex-col justify-between">
+              <div>
+                <div class="flex justify-between items-baseline gap-2">
+                  <h3 class="font-serif text-2xl text-white group-hover:text-brandGold transition">${pen.title}</h3>
+                  <span class="font-serif text-2xl text-brandGold">$${pen.price}</span>
+                </div>
+                <p class="text-brandGold/90 text-xs italic mt-1 font-serif">${pen.tagline || ''}</p>
+                <p class="text-brandMuted text-xs mt-3 leading-relaxed line-clamp-3">${pen.description || ''}</p>
+              </div>
+
+              <button onclick="openOrderModal(${pen.id}, '${pen.title.replace(/'/g, "\\'")}', '${pen.price}')" 
+                      class="mt-6 w-full py-3 rounded-lg border border-brandGold/40 text-brandGold hover:bg-brandGold hover:text-black font-semibold text-xs tracking-wider uppercase transition">
+                Order This Pen
+              </button>
+            </div>
+          </div>
+        `).join('');
+      } catch (err) {
+        grid.innerHTML = `<div class="col-span-full text-center text-red-400">Failed to load pens. Please verify server connectivity.</div>`;
+      }
+    }
+
+    // Modal Operations
+    function openOrderModal(id, title, price) {
+      document.getElementById('order-product-id').value = id;
+      document.getElementById('order-product-title').value = title;
+      document.getElementById('modal-pen-title').innerText = title;
+      document.getElementById('modal-pen-price').innerText = `$${price}`;
+      const modal = document.getElementById('order-modal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    function closeOrderModal() {
+      const modal = document.getElementById('order-modal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    // Submit Order to backend
+    async function submitOrder(e) {
+      e.preventDefault();
+      const btn = document.getElementById('submit-order-btn');
+      btn.innerText = 'Processing Order...';
+      btn.disabled = true;
+
+      const orderData = {
+        product_id: document.getElementById('order-product-id').value,
+        product_title: document.getElementById('order-product-title').value,
+        customer_name: document.getElementById('cust-name').value,
+        phone: document.getElementById('cust-phone').value,
+        email: document.getElementById('cust-email').value,
+        address: document.getElementById('cust-address').value,
+        city: document.getElementById('cust-city').value,
+        pincode: document.getElementById('cust-pincode').value,
+        quantity: document.getElementById('cust-qty').value,
+        order_notes: document.getElementById('cust-notes').value
+      };
+
+      try {
+        const res = await fetch('/api/orders', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(orderData)
+        });
+        const result = await res.json();
+        if (res.ok) {
+          alert(`Order placed successfully!\nReference ID: #AERO-${result.orderId}\nWe will contact you at ${orderData.phone} to confirm dispatch.`);
+          document.getElementById('order-form').reset();
+          closeOrderModal();
+        } else {
+          alert(result.error || 'Something went wrong.');
+        }
+      } catch (err) {
+        alert('Server communication error. Please try again.');
+      } finally {
+        btn.innerText = 'Confirm & Place Order';
+        btn.disabled = false;
+      }
+    }
+
+    loadPens();
+  </script>
+</body>
+</html>
