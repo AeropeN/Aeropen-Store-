@@ -48,10 +48,13 @@ const productUpload = upload.fields([
   { name: 'penImage', maxCount: 1 }
 ]);
 
-// 3. Connect to Turso Cloud Database
+// 3. Connect to Turso Cloud Database (strips 'Bearer ' if present)
+const rawToken = process.env.TURSO_AUTH_TOKEN || '';
+const cleanToken = rawToken.replace(/^Bearer\s+/i, '').trim();
+
 const db = createClient({
   url: process.env.TURSO_DATABASE_URL || 'file:local.db',
-  authToken: process.env.TURSO_AUTH_TOKEN || '',
+  authToken: cleanToken,
 });
 
 // Initialize database tables
