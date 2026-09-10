@@ -1,11 +1,20 @@
+// 1. Load environment variables safely
+try {
+  require('dotenv').config();
+} catch (e) {
+  // Render injects variables automatically
+}
+
 const express = require('express');
-const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const multer = require('multer');
 const fs = require('fs');
+
+// Cloud Database (Turso - Permanent Hosted SQLite)
+const { createClient } = require('@libsql/client');
 
 // Cloudinary Libraries for Permanent Image Storage
 const cloudinary = require('cloudinary').v2;
@@ -17,14 +26,14 @@ const JWT_SECRET = process.env.JWT_SECRET || 'aeropen-super-secret-key-2026';
 const ADMIN_USERNAME = process.env.ADMIN_USER || 'AeropeN';
 const ADMIN_PASSWORD = process.env.ADMIN_PASS || 'aeropen@2026';
 
-// Configure Cloudinary
+// 2. Configure Cloudinary
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-// Cloudinary Storage Engine for Multer (Images stay forever!)
+// Configure Multer storage to upload straight to Cloudinary
 const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: {
@@ -33,122 +42,117 @@ const storage = new CloudinaryStorage({
   },
 });
 
-// Configure Multer to accept up to 3 images safely
 const upload = multer({ storage });
 const productUpload = upload.fields([
   { name: 'penImages', maxCount: 3 },
   { name: 'penImage', maxCount: 1 }
 ]);
 
+// 3. Connect to Turso Cloud Database
+const db = createClient({
+  url: process.env.TURSO_DATABASE_URL || 'file:local.db',
+  authToken: process.env.TURSO_AUTH_TOKEN || '',
+});
+
+// Initialize database tables
+async function initDatabase() {
+  try {
+    await db.execute(`
+      CREATE TABLE IF NOT EXISTS products (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        title TEXT NOT NULL,
+        tagline TEXT,
+        price REAL NOT NULL,
+        category TEXT,
+        description TEXT,
+        image_url TEXT,
+        is_available INTEGER DEFAULT 1,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    await db.execute(`
+      CREATE TABLE IF NOT EXISTS orders (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        customer_name TEXT NOT NULL,
+        phone TEXT NOT NULL,
+        email TEXT,
+        address TEXT NOT NULL,
+        city TEXT NOT NULL,
+        pincode TEXT NOT NULL,
+        product_id INTEGER,
+        product_title TEXT,
+        quantity INTEGER DEFAULT 1,
+        order_notes TEXT,
+        status TEXT DEFAULT 'Pending Dispatch',
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    await db.execute(`
+      CREATE TABLE IF NOT EXISTS inquiries (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        phone TEXT NOT NULL,
+        message TEXT NOT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // Check if products exist; seed if empty
+    const check = await db.execute('SELECT COUNT(*) as count FROM products');
+    const count = Number(check.rows[0].count);
+
+    if (count === 0) {
+      await db.execute({
+        sql: `INSERT INTO products (title, tagline, price, category, description, image_url)
+              VALUES (?, ?, ?, ?, ?, ?)`,
+        args: [
+          'Aeropen Celestial Fountain Pen',
+          'Handcrafted 18k Gold Nib with Aerospace Titanium Finish',
+          149.00,
+          'Fountain Pens',
+          'Forged with aircraft-grade titanium barrel and an iridium-tipped nib.',
+          JSON.stringify(['https://images.unsplash.com/photo-1583485088034-697b5bc54ccd?q=80&w=1000'])
+        ]
+      });
+      console.log('Database seeded with default pen.');
+    }
+    console.log('Aeropen Cloud Database connected.');
+  } catch (err) {
+    console.error('Error initializing cloud database:', err);
+  }
+}
+initDatabase();
+
 // Middleware
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Serve files from main folder AND public folder
+// Serve files
 app.use(express.static(__dirname));
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// FIXES "Cannot GET /": Directly sends index.html
+// HTML Page Routes
 app.get('/', (req, res) => {
   const rootIndex = path.join(__dirname, 'index.html');
   const publicIndex = path.join(__dirname, 'public', 'index.html');
-
-  if (fs.existsSync(rootIndex)) {
-    return res.sendFile(rootIndex);
-  } else if (fs.existsSync(publicIndex)) {
-    return res.sendFile(publicIndex);
-  } else {
-    res.status(404).send('<h2>index.html file not found!</h2><p>Make sure your website HTML file is named <b>index.html</b>.</p>');
-  }
+  if (fs.existsSync(rootIndex)) return res.sendFile(rootIndex);
+  if (fs.existsSync(publicIndex)) return res.sendFile(publicIndex);
+  res.status(404).send('<h2>index.html file not found!</h2>');
 });
 
-// Admin Route: Directly sends admin.html
 app.get('/admin', (req, res) => {
   const rootAdmin = path.join(__dirname, 'admin.html');
   const publicAdmin = path.join(__dirname, 'public', 'admin.html');
-
-  if (fs.existsSync(rootAdmin)) {
-    return res.sendFile(rootAdmin);
-  } else if (fs.existsSync(publicAdmin)) {
-    return res.sendFile(publicAdmin);
-  } else {
-    res.status(404).send('<h2>admin.html file not found!</h2>');
-  }
+  if (fs.existsSync(rootAdmin)) return res.sendFile(rootAdmin);
+  if (fs.existsSync(publicAdmin)) return res.sendFile(publicAdmin);
+  res.status(404).send('<h2>admin.html file not found!</h2>');
 });
 
-// Database Initialization (SQLite)
-const db = new sqlite3.Database('./aeropen.db', (err) => {
-  if (err) console.error('Database connection error:', err);
-  else console.log('Connected to Aeropen SQLite Database.');
-});
-
-// Setup Tables & Seed Data
-db.serialize(() => {
-  db.run(`
-    CREATE TABLE IF NOT EXISTS products (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      title TEXT NOT NULL,
-      tagline TEXT,
-      price REAL NOT NULL,
-      category TEXT,
-      description TEXT,
-      image_url TEXT,
-      is_available INTEGER DEFAULT 1,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    )
-  `);
-
-  db.run(`
-    CREATE TABLE IF NOT EXISTS orders (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      customer_name TEXT NOT NULL,
-      phone TEXT NOT NULL,
-      email TEXT,
-      address TEXT NOT NULL,
-      city TEXT NOT NULL,
-      pincode TEXT NOT NULL,
-      product_id INTEGER,
-      product_title TEXT,
-      quantity INTEGER DEFAULT 1,
-      order_notes TEXT,
-      status TEXT DEFAULT 'Pending Dispatch',
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      FOREIGN KEY(product_id) REFERENCES products(id)
-    )
-  `);
-
-  db.run(`
-    CREATE TABLE IF NOT EXISTS inquiries (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      name TEXT NOT NULL,
-      phone TEXT NOT NULL,
-      message TEXT NOT NULL,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    )
-  `);
-
-  db.get('SELECT COUNT(*) as count FROM products', (err, row) => {
-    if (row && row.count === 0) {
-      const stmt = db.prepare(`
-        INSERT INTO products (title, tagline, price, category, description, image_url)
-        VALUES (?, ?, ?, ?, ?, ?)
-      `);
-      stmt.run(
-        'Aeropen Celestial Fountain Pen',
-        'Handcrafted 18k Gold Nib with Aerospace Titanium Finish',
-        149.00,
-        'Fountain Pens',
-        'Forged with aircraft-grade titanium barrel and an iridium-tipped nib.',
-        JSON.stringify(['https://images.unsplash.com/photo-1583485088034-697b5bc54ccd?q=80&w=1000'])
-      );
-      stmt.finalize();
-    }
-  });
-});
-
-// Auth Middleware
+// Admin Auth Middleware
 function authenticateAdmin(req, res, next) {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
@@ -173,31 +177,39 @@ app.post('/api/admin/login', (req, res) => {
   return res.status(401).json({ error: 'Invalid admin credentials.' });
 });
 
-// Products Routes: Returns all images
-app.get('/api/products', (req, res) => {
-  db.all('SELECT * FROM products ORDER BY id DESC', [], (err, rows) => {
-    if (err) return res.status(500).json({ error: err.message });
-    
-    const parsed = rows.map(r => {
+// Products: Get All
+app.get('/api/products', async (req, res) => {
+  try {
+    const result = await db.execute('SELECT * FROM products ORDER BY id DESC');
+    const parsed = result.rows.map(r => {
       let images = [];
       try {
         images = JSON.parse(r.image_url);
         if (!Array.isArray(images)) images = [r.image_url];
       } catch (e) {
-        images = r.image_url ? r.image_url.split(/[\n,]+/).map(u => u.trim()) : [];
+        images = r.image_url ? String(r.image_url).split(/[\n,]+/).map(u => u.trim()) : [];
       }
       return {
-        ...r,
+        id: r.id,
+        title: r.title,
+        tagline: r.tagline,
+        price: r.price,
+        category: r.category,
+        description: r.description,
+        is_available: r.is_available,
+        created_at: r.created_at,
         images: images,
         image_url: images[0] || ''
       };
     });
     res.json(parsed);
-  });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
-// Product Upload: Uploads directly to Cloudinary and saves permanent HTTPS URLs
-app.post('/api/products', authenticateAdmin, productUpload, (req, res) => {
+// Products: Upload & Add
+app.post('/api/products', authenticateAdmin, productUpload, async (req, res) => {
   try {
     const { title, tagline, price, category, description, imageUrlDirect } = req.body;
 
@@ -206,12 +218,12 @@ app.post('/api/products', authenticateAdmin, productUpload, (req, res) => {
     }
 
     let imageList = [];
+    const getUrl = f => f.path || f.secure_url || f.url;
 
-    // Cloudinary stores the permanent online image URL in `file.path`
     if (req.files && req.files.penImages && req.files.penImages.length > 0) {
-      imageList = req.files.penImages.map(f => f.path);
+      imageList = req.files.penImages.map(getUrl);
     } else if (req.files && req.files.penImage && req.files.penImage.length > 0) {
-      imageList = [req.files.penImage[0].path];
+      imageList = [getUrl(req.files.penImage[0])];
     }
 
     if (imageUrlDirect) {
@@ -221,13 +233,16 @@ app.post('/api/products', authenticateAdmin, productUpload, (req, res) => {
 
     const savedImagesJson = JSON.stringify(imageList);
 
-    const query = `
-      INSERT INTO products (title, tagline, price, category, description, image_url)
-      VALUES (?, ?, ?, ?, ?, ?)
-    `;
-    db.run(query, [title, tagline, price, category, description, savedImagesJson], function(err) {
-      if (err) return res.status(500).json({ error: err.message });
-      res.json({ success: true, id: this.lastID, message: 'Pen added to Aeropen collection!' });
+    const result = await db.execute({
+      sql: `INSERT INTO products (title, tagline, price, category, description, image_url)
+            VALUES (?, ?, ?, ?, ?, ?)`,
+      args: [title, tagline, Number(price), category, description, savedImagesJson]
+    });
+
+    res.json({
+      success: true,
+      id: Number(result.lastInsertRowid),
+      message: 'Pen added to Aeropen collection!'
     });
   } catch (err) {
     console.error('Upload route error:', err);
@@ -235,79 +250,110 @@ app.post('/api/products', authenticateAdmin, productUpload, (req, res) => {
   }
 });
 
-app.delete('/api/products/:id', authenticateAdmin, (req, res) => {
-  db.run('DELETE FROM products WHERE id = ?', [req.params.id], function(err) {
-    if (err) return res.status(500).json({ error: err.message });
+app.delete('/api/products/:id', authenticateAdmin, async (req, res) => {
+  try {
+    await db.execute({
+      sql: 'DELETE FROM products WHERE id = ?',
+      args: [req.params.id]
+    });
     res.json({ success: true, message: 'Pen removed from collection.' });
-  });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // Orders Routes
-app.post('/api/orders', (req, res) => {
-  const { customer_name, phone, email, address, city, pincode, product_id, product_title, quantity, order_notes } = req.body;
+app.post('/api/orders', async (req, res) => {
+  try {
+    const { customer_name, phone, email, address, city, pincode, product_id, product_title, quantity, order_notes } = req.body;
 
-  if (!customer_name || !phone || !address || !pincode || !product_title) {
-    return res.status(400).json({ error: 'Please provide all shipping and contact details.' });
+    if (!customer_name || !phone || !address || !pincode || !product_title) {
+      return res.status(400).json({ error: 'Please provide all shipping and contact details.' });
+    }
+
+    const result = await db.execute({
+      sql: `INSERT INTO orders (customer_name, phone, email, address, city, pincode, product_id, product_title, quantity, order_notes)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      args: [customer_name, phone, email, address, city, pincode, product_id, product_title, quantity || 1, order_notes || '']
+    });
+
+    res.json({ success: true, orderId: Number(result.lastInsertRowid) });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
-
-  const query = `
-    INSERT INTO orders (customer_name, phone, email, address, city, pincode, product_id, product_title, quantity, order_notes)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `;
-  db.run(query, [customer_name, phone, email, address, city, pincode, product_id, product_title, quantity || 1, order_notes || ''], function(err) {
-    if (err) return res.status(500).json({ error: err.message });
-    res.json({ success: true, orderId: this.lastID });
-  });
 });
 
-app.get('/api/orders', authenticateAdmin, (req, res) => {
-  db.all('SELECT * FROM orders ORDER BY id DESC', [], (err, rows) => {
-    if (err) return res.status(500).json({ error: err.message });
-    res.json(rows);
-  });
+app.get('/api/orders', authenticateAdmin, async (req, res) => {
+  try {
+    const result = await db.execute('SELECT * FROM orders ORDER BY id DESC');
+    res.json(result.rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
-app.patch('/api/orders/:id/status', authenticateAdmin, (req, res) => {
-  const { status } = req.body;
-  db.run('UPDATE orders SET status = ? WHERE id = ?', [status, req.params.id], function(err) {
-    if (err) return res.status(500).json({ error: err.message });
+app.patch('/api/orders/:id/status', authenticateAdmin, async (req, res) => {
+  try {
+    await db.execute({
+      sql: 'UPDATE orders SET status = ? WHERE id = ?',
+      args: [req.body.status, req.params.id]
+    });
     res.json({ success: true, message: 'Order status updated.' });
-  });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
-app.delete('/api/orders/:id', authenticateAdmin, (req, res) => {
-  db.run('DELETE FROM orders WHERE id = ?', [req.params.id], function(err) {
-    if (err) return res.status(500).json({ error: err.message });
+app.delete('/api/orders/:id', authenticateAdmin, async (req, res) => {
+  try {
+    await db.execute({
+      sql: 'DELETE FROM orders WHERE id = ?',
+      args: [req.params.id]
+    });
     res.json({ success: true, message: 'Order deleted successfully.' });
-  });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // Inquiries Routes
-app.post('/api/inquiries', (req, res) => {
-  const { name, phone, message } = req.body;
-  if (!name || !phone || !message) {
-    return res.status(400).json({ error: 'Name, phone, and message are required.' });
+app.post('/api/inquiries', async (req, res) => {
+  try {
+    const { name, phone, message } = req.body;
+    if (!name || !phone || !message) {
+      return res.status(400).json({ error: 'Name, phone, and message are required.' });
+    }
+
+    const result = await db.execute({
+      sql: `INSERT INTO inquiries (name, phone, message) VALUES (?, ?, ?)`,
+      args: [name, phone, message]
+    });
+
+    res.status(201).json({ success: true, inquiryId: Number(result.lastInsertRowid) });
+  } catch (err) {
+    res.status(500).json({ error: 'Database error saving inquiry.' });
   }
-
-  const query = `INSERT INTO inquiries (name, phone, message) VALUES (?, ?, ?)`;
-  db.run(query, [name, phone, message], function (err) {
-    if (err) return res.status(500).json({ error: 'Database error saving inquiry.' });
-    res.status(201).json({ success: true, inquiryId: this.lastID });
-  });
 });
 
-app.get('/api/inquiries', authenticateAdmin, (req, res) => {
-  db.all('SELECT * FROM inquiries ORDER BY id DESC', [], (err, rows) => {
-    if (err) return res.status(500).json({ error: err.message });
-    res.json(rows || []);
-  });
+app.get('/api/inquiries', authenticateAdmin, async (req, res) => {
+  try {
+    const result = await db.execute('SELECT * FROM inquiries ORDER BY id DESC');
+    res.json(result.rows || []);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
-app.delete('/api/inquiries/:id', authenticateAdmin, (req, res) => {
-  db.run('DELETE FROM inquiries WHERE id = ?', [req.params.id], function (err) {
-    if (err) return res.status(500).json({ error: err.message });
+app.delete('/api/inquiries/:id', authenticateAdmin, async (req, res) => {
+  try {
+    await db.execute({
+      sql: 'DELETE FROM inquiries WHERE id = ?',
+      args: [req.params.id]
+    });
     res.json({ success: true, message: 'Inquiry deleted.' });
-  });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // Start Server
