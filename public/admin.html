@@ -22,7 +22,7 @@
 </head>
 <body class="bg-brandDark text-slate-200 antialiased min-h-screen">
 
-  <!-- 1. LOGIN SCREEN (Visible if unauthenticated) -->
+  <!-- 1. LOGIN SCREEN -->
   <div id="login-section" class="min-h-screen flex items-center justify-center px-4">
     <div class="max-w-md w-full bg-brandCard border border-white/10 p-8 rounded-2xl shadow-2xl">
       <div class="text-center mb-8">
@@ -37,7 +37,12 @@
         </div>
         <div>
           <label class="block text-slate-400 text-xs mb-1">Password</label>
-          <input type="password" id="login-pass" required class="w-full bg-black/50 border border-white/10 rounded-lg px-4 py-3 text-white focus:border-brandGold outline-none">
+          <div class="relative">
+            <input type="password" id="login-pass" required class="w-full bg-black/50 border border-white/10 rounded-lg px-4 py-3 pr-11 text-white focus:border-brandGold outline-none">
+            <button type="button" onclick="togglePasswordVisibility()" class="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-brandGold transition focus:outline-none" title="Toggle password visibility">
+              <i id="toggle-pass-icon" class="fa-solid fa-eye"></i>
+            </button>
+          </div>
         </div>
         <button type="submit" class="w-full py-3 rounded-lg bg-brandGold text-black font-semibold uppercase text-xs tracking-wider hover:bg-yellow-500 transition">
           Authenticate
@@ -46,9 +51,8 @@
     </div>
   </div>
 
-  <!-- 2. MAIN ADMIN DASHBOARD (Protected) -->
+  <!-- 2. MAIN ADMIN DASHBOARD -->
   <div id="dashboard-section" class="hidden min-h-screen flex flex-col">
-    <!-- Top Bar -->
     <header class="h-20 bg-brandCard border-b border-white/10 px-8 flex items-center justify-between">
       <div class="flex items-center gap-4">
         <span class="font-serif text-2xl font-bold text-brandGold tracking-wider">AEROPEN</span>
@@ -65,6 +69,9 @@
       <button onclick="switchTab('orders')" id="tab-btn-orders" class="pb-3 border-b-2 border-brandGold text-brandGold font-medium text-sm flex items-center gap-2">
         <i class="fa-solid fa-boxes-packing"></i> Orders & Dispatch Desk
       </button>
+      <button onclick="switchTab('inquiries')" id="tab-btn-inquiries" class="pb-3 border-b-2 border-transparent text-slate-400 hover:text-white font-medium text-sm flex items-center gap-2">
+        <i class="fa-solid fa-envelope-open-text"></i> Customer Inquiries
+      </button>
       <button onclick="switchTab('products')" id="tab-btn-products" class="pb-3 border-b-2 border-transparent text-slate-400 hover:text-white font-medium text-sm flex items-center gap-2">
         <i class="fa-solid fa-pen-nib"></i> Upload Pens & Inventory
       </button>
@@ -73,7 +80,7 @@
     <!-- Main Content Area -->
     <main class="max-w-7xl mx-auto w-full px-6 py-8 flex-1">
       
-      <!-- TAB 1: ORDERS & DISPATCH -->
+      <!-- TAB 1: ORDERS -->
       <section id="tab-orders">
         <div class="flex justify-between items-center mb-6">
           <div>
@@ -91,10 +98,10 @@
               <tr>
                 <th class="p-4">ID & Date</th>
                 <th class="p-4">Customer Details</th>
-                <th class="p-4">Delivery Address & Pincode</th>
+                <th class="p-4">Delivery Address</th>
                 <th class="p-4">Pen Model & Qty</th>
                 <th class="p-4">Status</th>
-                <th class="p-4 text-right">Dispatch Action</th>
+                <th class="p-4 text-right">Actions</th>
               </tr>
             </thead>
             <tbody id="orders-table-body" class="divide-y divide-white/5">
@@ -104,12 +111,41 @@
         </div>
       </section>
 
-      <!-- TAB 2: UPLOAD PENS -->
+      <!-- TAB 2: INQUIRIES & MESSAGES -->
+      <section id="tab-inquiries" class="hidden">
+        <div class="flex justify-between items-center mb-6">
+          <div>
+            <h2 class="text-2xl font-serif text-white">Customer Inquiries & Call Requests</h2>
+            <p class="text-xs text-slate-400 mt-1">Direct callback requests and inquiries submitted through the storefront form.</p>
+          </div>
+          <button onclick="loadInquiries()" class="px-4 py-2 bg-white/5 hover:bg-white/10 rounded-lg text-xs uppercase tracking-wider text-slate-300">
+            <i class="fa-solid fa-rotate-right mr-1"></i> Refresh
+          </button>
+        </div>
+
+        <div class="bg-brandCard border border-white/10 rounded-2xl overflow-x-auto shadow-xl">
+          <table class="w-full text-left text-sm">
+            <thead class="bg-black/40 text-[11px] uppercase tracking-wider text-slate-400 border-b border-white/10">
+              <tr>
+                <th class="p-4">Date & Time</th>
+                <th class="p-4">Customer Name</th>
+                <th class="p-4">Phone Number</th>
+                <th class="p-4">Inquiry / Message</th>
+                <th class="p-4 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="inquiries-table-body" class="divide-y divide-white/5">
+              <tr><td colspan="5" class="p-8 text-center text-slate-400">Fetching inquiries...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- TAB 3: UPLOAD PENS -->
       <section id="tab-products" class="hidden">
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <!-- Upload Form -->
           <div class="bg-brandCard border border-white/10 p-6 rounded-2xl shadow-xl">
-            <h3 class="font-serif text-2xl text-white mb-4">Add New Pen to Aeropen</h3>
+            <h3 class="font-serif text-2xl text-white mb-4">Add New Pen</h3>
             <form id="add-pen-form" onsubmit="uploadPen(event)" class="space-y-4 text-xs">
               <div>
                 <label class="block text-slate-400 mb-1">Pen Name / Model *</label>
@@ -121,8 +157,8 @@
               </div>
               <div class="grid grid-cols-2 gap-3">
                 <div>
-                  <label class="block text-slate-400 mb-1">Price (USD) *</label>
-                  <input type="number" step="0.01" id="pen-price" required placeholder="120.00" class="w-full bg-black/50 border border-white/10 rounded-lg p-3 text-white focus:border-brandGold outline-none">
+                  <label class="block text-slate-400 mb-1">Price (₹) *</label>
+                  <input type="number" step="0.01" id="pen-price" required placeholder="4999.00" class="w-full bg-black/50 border border-white/10 rounded-lg p-3 text-white focus:border-brandGold outline-none">
                 </div>
                 <div>
                   <label class="block text-slate-400 mb-1">Category</label>
@@ -134,13 +170,29 @@
                 </div>
               </div>
 
+              <!-- Multi-file Upload -->
               <div>
-                <label class="block text-slate-400 mb-1">Pen Photo (Upload File)</label>
-                <input type="file" id="pen-file" accept="image/*" class="w-full text-slate-400 text-xs file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:bg-white/10 file:text-white hover:file:bg-brandGold hover:file:text-black">
+                <div class="flex justify-between items-center mb-1">
+                  <label class="text-slate-400">Pen Photos (Upload 1 to 3 images)</label>
+                  <span id="file-counter" class="text-[10px] text-brandGold font-semibold">0/3 selected</span>
+                </div>
+                <input 
+                  type="file" 
+                  id="pen-files" 
+                  accept="image/*" 
+                  multiple 
+                  onchange="handleImageSelection(event)"
+                  class="w-full text-slate-400 text-xs file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:bg-white/10 file:text-white hover:file:bg-brandGold hover:file:text-black transition cursor-pointer"
+                >
+                <p class="text-[10px] text-slate-500 mt-1">Hold Ctrl (or Cmd) to select 2 or 3 photos together.</p>
+
+                <!-- Live Thumbnails -->
+                <div id="image-preview-container" class="mt-3 grid grid-cols-3 gap-2"></div>
               </div>
+
               <div>
-                <label class="block text-slate-400 mb-1">...Or Paste Image URL directly</label>
-                <input type="url" id="pen-url" placeholder="https://images.unsplash.com/..." class="w-full bg-black/50 border border-white/10 rounded-lg p-3 text-white focus:border-brandGold outline-none">
+                <label class="block text-slate-400 mb-1">...Or Direct Image URLs (separated by new line)</label>
+                <textarea id="pen-urls" rows="2" placeholder="https://image1.jpg&#10;https://image2.jpg" class="w-full bg-black/50 border border-white/10 rounded-lg p-3 text-white focus:border-brandGold outline-none"></textarea>
               </div>
 
               <div>
@@ -154,12 +206,9 @@
             </form>
           </div>
 
-          <!-- Active Pens List -->
           <div class="lg:col-span-2">
             <h3 class="font-serif text-2xl text-white mb-4">Active Inventory</h3>
-            <div id="admin-pens-list" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <!-- Dynamically populated -->
-            </div>
+            <div id="admin-pens-list" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
           </div>
         </div>
       </section>
@@ -169,13 +218,67 @@
 
   <script>
     const API_TOKEN_KEY = 'aeropen_token';
+    let selectedFiles = [];
+
+    // Helper: Formats timestamp accurately to Day/Month/Year and exact local Time (12h format with AM/PM)
+    function formatDateTime(val) {
+      if (!val) return { date: 'N/A', time: '' };
+      let d;
+
+      if (typeof val === 'number') {
+        d = new Date(val < 1e11 ? val * 1000 : val);
+      } else if (typeof val === 'string') {
+        let s = val.trim();
+        // If SQL timestamp format "YYYY-MM-DD HH:MM:SS" without timezone, treat as UTC
+        if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(s)) {
+          d = new Date(s.replace(' ', 'T') + 'Z');
+        } else {
+          d = new Date(s);
+        }
+      } else {
+        d = new Date(val);
+      }
+
+      if (!d || isNaN(d.getTime())) return { date: 'N/A', time: '' };
+
+      // Strictly Day/Month/Year (DD/MM/YYYY)
+      const day = String(d.getDate()).padStart(2, '0');
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const year = d.getFullYear();
+      const dateFormatted = `${day}/${month}/${year}`;
+
+      // Exact time with seconds and AM/PM in user's local timezone
+      const timeFormatted = d.toLocaleTimeString([], {
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: true
+      });
+
+      return { date: dateFormatted, time: timeFormatted };
+    }
+
+    function togglePasswordVisibility() {
+      const passInput = document.getElementById('login-pass');
+      const icon = document.getElementById('toggle-pass-icon');
+      if (passInput.type === 'password') {
+        passInput.type = 'text';
+        icon.classList.remove('fa-eye');
+        icon.classList.add('fa-eye-slash');
+      } else {
+        passInput.type = 'password';
+        icon.classList.remove('fa-eye-slash');
+        icon.classList.add('fa-eye');
+      }
+    }
 
     function checkAuth() {
-      const token = localStorage.getItem(API_TOKEN_KEY);
+      const token = sessionStorage.getItem(API_TOKEN_KEY);
       if (token) {
         document.getElementById('login-section').classList.add('hidden');
         document.getElementById('dashboard-section').classList.remove('hidden');
         loadOrders();
+        loadInquiries();
         loadAdminPens();
       } else {
         document.getElementById('login-section').classList.remove('hidden');
@@ -196,7 +299,7 @@
         });
         const data = await res.json();
         if (res.ok && data.token) {
-          localStorage.setItem(API_TOKEN_KEY, data.token);
+          sessionStorage.setItem(API_TOKEN_KEY, data.token);
           checkAuth();
         } else {
           alert(data.error || 'Authentication failed');
@@ -207,30 +310,65 @@
     }
 
     function logout() {
-      localStorage.removeItem(API_TOKEN_KEY);
+      sessionStorage.removeItem(API_TOKEN_KEY);
       checkAuth();
     }
 
     function switchTab(tab) {
       document.getElementById('tab-orders').classList.toggle('hidden', tab !== 'orders');
+      document.getElementById('tab-inquiries').classList.toggle('hidden', tab !== 'inquiries');
       document.getElementById('tab-products').classList.toggle('hidden', tab !== 'products');
       
-      document.getElementById('tab-btn-orders').className = tab === 'orders'
-        ? 'pb-3 border-b-2 border-brandGold text-brandGold font-medium text-sm flex items-center gap-2'
-        : 'pb-3 border-b-2 border-transparent text-slate-400 hover:text-white font-medium text-sm flex items-center gap-2';
+      const activeClass = 'pb-3 border-b-2 border-brandGold text-brandGold font-medium text-sm flex items-center gap-2';
+      const inactiveClass = 'pb-3 border-b-2 border-transparent text-slate-400 hover:text-white font-medium text-sm flex items-center gap-2';
 
-      document.getElementById('tab-btn-products').className = tab === 'products'
-        ? 'pb-3 border-b-2 border-brandGold text-brandGold font-medium text-sm flex items-center gap-2'
-        : 'pb-3 border-b-2 border-transparent text-slate-400 hover:text-white font-medium text-sm flex items-center gap-2';
+      document.getElementById('tab-btn-orders').className = tab === 'orders' ? activeClass : inactiveClass;
+      document.getElementById('tab-btn-inquiries').className = tab === 'inquiries' ? activeClass : inactiveClass;
+      document.getElementById('tab-btn-products').className = tab === 'products' ? activeClass : inactiveClass;
     }
 
-    // Load orders
+    function handleImageSelection(event) {
+      const files = Array.from(event.target.files);
+      if (files.length > 3) {
+        alert('Please select up to 3 pictures only.');
+        event.target.value = '';
+        selectedFiles = [];
+        updatePreview();
+        return;
+      }
+      selectedFiles = files;
+      updatePreview();
+    }
+
+    function updatePreview() {
+      const container = document.getElementById('image-preview-container');
+      const counter = document.getElementById('file-counter');
+      counter.innerText = `${selectedFiles.length}/3 selected`;
+      container.innerHTML = '';
+
+      selectedFiles.forEach((file, index) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const div = document.createElement('div');
+          div.className = 'relative aspect-square rounded-lg overflow-hidden border border-white/20 bg-black/40';
+          div.innerHTML = `
+            <img src="${e.target.result}" class="w-full h-full object-cover">
+            <span class="absolute bottom-1 left-1 px-1.5 py-0.5 rounded bg-black/70 text-[9px] text-white">#${index + 1}</span>
+          `;
+          container.appendChild(div);
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+
     async function loadOrders() {
       const tbody = document.getElementById('orders-table-body');
       try {
         const res = await fetch('/api/orders', {
-          headers: { 'Authorization': `Bearer ${localStorage.getItem(API_TOKEN_KEY)}` }
+          headers: { 'Authorization': `Bearer ${sessionStorage.getItem(API_TOKEN_KEY)}` }
         });
+
+        if (res.status === 401) { logout(); return; }
         const orders = await res.json();
 
         if (!orders || orders.length === 0) {
@@ -238,11 +376,13 @@
           return;
         }
 
-        tbody.innerHTML = orders.map(o => `
+        tbody.innerHTML = orders.map(o => {
+          const { date } = formatDateTime(o.created_at || o.createdAt || o.date);
+          return `
           <tr class="hover:bg-white/[0.02]">
             <td class="p-4 align-top">
               <span class="font-bold text-white">#AERO-${o.id}</span>
-              <p class="text-[11px] text-slate-400">${new Date(o.created_at).toLocaleDateString()}</p>
+              <p class="text-[11px] text-slate-400">${date}</p>
             </td>
             <td class="p-4 align-top">
               <div class="font-semibold text-white">${o.customer_name}</div>
@@ -256,7 +396,6 @@
             <td class="p-4 align-top">
               <div class="text-white font-medium">${o.product_title}</div>
               <div class="text-xs text-slate-400">Qty: <strong>${o.quantity}</strong></div>
-              ${o.order_notes ? `<div class="text-[11px] text-amber-300 italic mt-1">Note: "${o.order_notes}"</div>` : ''}
             </td>
             <td class="p-4 align-top">
               <span class="px-2.5 py-1 rounded-full text-[10px] uppercase font-semibold tracking-wider ${
@@ -265,12 +404,13 @@
                 'bg-amber-500/10 text-amber-400 border border-amber-500/30'
               }">${o.status}</span>
             </td>
-            <td class="p-4 align-top text-right space-y-1">
+            <td class="p-4 align-top text-right space-x-1 whitespace-nowrap">
               <button onclick="updateOrderStatus(${o.id}, 'Dispatched')" class="text-xs px-2.5 py-1 rounded bg-white/10 hover:bg-white/20 text-slate-200">Dispatch</button>
               <button onclick="updateOrderStatus(${o.id}, 'Delivered')" class="text-xs px-2.5 py-1 rounded bg-emerald-600/20 hover:bg-emerald-600/40 text-emerald-300">Complete</button>
+              <button onclick="deleteOrder(${o.id})" class="text-xs px-2.5 py-1 rounded bg-red-600/20 hover:bg-red-600/40 text-red-400"><i class="fa-regular fa-trash-can"></i></button>
             </td>
           </tr>
-        `).join('');
+        `}).join('');
       } catch (err) {
         tbody.innerHTML = `<tr><td colspan="6" class="p-8 text-center text-red-400">Failed to load orders.</td></tr>`;
       }
@@ -281,29 +421,108 @@
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem(API_TOKEN_KEY)}`
+          'Authorization': `Bearer ${sessionStorage.getItem(API_TOKEN_KEY)}`
         },
         body: JSON.stringify({ status })
       });
       loadOrders();
     }
 
-    // Load admin pens
+    async function deleteOrder(orderId) {
+      if (!confirm(`Are you sure you want to permanently remove Order #AERO-${orderId}?`)) return;
+      await fetch(`/api/orders/${orderId}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${sessionStorage.getItem(API_TOKEN_KEY)}` }
+      });
+      loadOrders();
+    }
+
+    async function loadInquiries() {
+      const tbody = document.getElementById('inquiries-table-body');
+      try {
+        const res = await fetch('/api/inquiries', {
+          headers: { 'Authorization': `Bearer ${sessionStorage.getItem(API_TOKEN_KEY)}` }
+        });
+
+        if (res.status === 401) { logout(); return; }
+        const inquiries = await res.json();
+
+        if (!inquiries || inquiries.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="5" class="p-8 text-center text-slate-400">No customer inquiries received yet.</td></tr>`;
+          return;
+        }
+
+        tbody.innerHTML = inquiries.map(i => {
+          // Extracts exact sent timestamp, converting UTC properly if needed
+          const { date, time } = formatDateTime(i.created_at || i.createdAt || i.timestamp || i.date);
+
+          return `
+          <tr class="hover:bg-white/[0.02]">
+            <td class="p-4 align-top text-xs text-slate-400 whitespace-nowrap">
+              <span class="font-medium text-slate-200">${date}</span>
+              <div class="text-[11px] text-brandGold font-mono mt-0.5">${time}</div>
+            </td>
+            <td class="p-4 align-top">
+              <div class="font-semibold text-white">${i.name}</div>
+            </td>
+            <td class="p-4 align-top whitespace-nowrap">
+              <a href="tel:${i.phone}" class="text-xs text-brandGold hover:underline font-mono">
+                <i class="fa-solid fa-phone text-[10px] mr-1"></i>${i.phone}
+              </a>
+            </td>
+            <td class="p-4 align-top">
+              <div class="text-xs text-slate-200 leading-relaxed whitespace-pre-wrap">${i.message}</div>
+            </td>
+            <td class="p-4 align-top text-right whitespace-nowrap">
+              <button onclick="deleteInquiry(${i.id})" class="text-xs px-2.5 py-1 rounded bg-red-600/20 hover:bg-red-600/40 text-red-400 hover:text-red-300" title="Delete Inquiry">
+                <i class="fa-regular fa-trash-can"></i>
+              </button>
+            </td>
+          </tr>
+        `;
+        }).join('');
+      } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="5" class="p-8 text-center text-red-400">Failed to load inquiries.</td></tr>`;
+      }
+    }
+
+    async function deleteInquiry(id) {
+      if (!confirm(`Are you sure you want to remove this inquiry?`)) return;
+      await fetch(`/api/inquiries/${id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${sessionStorage.getItem(API_TOKEN_KEY)}` }
+      });
+      loadInquiries();
+    }
+
     async function loadAdminPens() {
       const list = document.getElementById('admin-pens-list');
-      const res = await fetch('/api/products');
-      const pens = await res.json();
+      try {
+        const res = await fetch('/api/products');
+        const pens = await res.json();
 
-      list.innerHTML = pens.map(p => `
-        <div class="bg-black/30 border border-white/10 p-4 rounded-xl flex gap-4 items-center justify-between">
-          <img src="${p.image_url}" class="w-16 h-16 object-cover rounded-lg border border-white/10">
-          <div class="flex-1 min-w-0">
-            <h4 class="text-white font-medium truncate">${p.title}</h4>
-            <p class="text-brandGold text-xs font-semibold">$${p.price}</p>
-          </div>
-          <button onclick="deletePen(${p.id})" class="text-red-400 hover:text-red-300 text-sm p-2"><i class="fa-regular fa-trash-can"></i></button>
-        </div>
-      `).join('');
+        list.innerHTML = pens.map(p => {
+          const images = Array.isArray(p.images) ? p.images : (p.image_url ? [p.image_url] : []);
+          const mainImg = images[0] || 'https://images.unsplash.com/photo-1457298483369-0a95d2b17fcd?q=80&w=300';
+
+          return `
+            <div class="bg-black/30 border border-white/10 p-4 rounded-xl flex gap-4 items-center justify-between">
+              <div class="relative w-16 h-16 flex-shrink-0">
+                <img src="${mainImg}" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1457298483369-0a95d2b17fcd?q=80&w=300';" class="w-16 h-16 object-cover rounded-lg border border-white/10">
+                ${images.length > 1 ? `<span class="absolute -top-1.5 -right-1.5 px-1.5 py-0.5 bg-brandGold text-black font-bold text-[9px] rounded-full shadow">${images.length}</span>` : ''}
+              </div>
+              <div class="flex-1 min-w-0">
+                <h4 class="text-white font-medium truncate">${p.title}</h4>
+                <p class="text-brandGold text-xs font-semibold">₹${p.price}</p>
+                ${images.length > 1 ? `<p class="text-[10px] text-slate-400">${images.length} photos uploaded</p>` : ''}
+              </div>
+              <button onclick="deletePen(${p.id})" class="text-red-400 hover:text-red-300 text-sm p-2"><i class="fa-regular fa-trash-can"></i></button>
+            </div>
+          `;
+        }).join('');
+      } catch (err) {
+        list.innerHTML = `<p class="text-xs text-red-400">Failed to load inventory.</p>`;
+      }
     }
 
     async function uploadPen(e) {
@@ -312,34 +531,47 @@
       btn.innerText = 'Publishing...';
       btn.disabled = true;
 
+      const fileInput = document.getElementById('pen-files');
+      if (fileInput.files.length > 3) {
+        alert('Please select up to 3 pictures only.');
+        btn.innerText = 'Publish Pen to Website';
+        btn.disabled = false;
+        return;
+      }
+
       const formData = new FormData();
       formData.append('title', document.getElementById('pen-title').value);
       formData.append('tagline', document.getElementById('pen-tagline').value);
       formData.append('price', document.getElementById('pen-price').value);
       formData.append('category', document.getElementById('pen-category').value);
       formData.append('description', document.getElementById('pen-desc').value);
-      formData.append('imageUrlDirect', document.getElementById('pen-url').value);
+      formData.append('imageUrlDirect', document.getElementById('pen-urls').value);
 
-      const fileInput = document.getElementById('pen-file');
-      if (fileInput.files[0]) {
-        formData.append('penImage', fileInput.files[0]);
+      // Append up to 3 selected files
+      for (let i = 0; i < fileInput.files.length; i++) {
+        formData.append('penImages', fileInput.files[i]);
       }
 
       try {
         const res = await fetch('/api/products', {
           method: 'POST',
-          headers: { 'Authorization': `Bearer ${localStorage.getItem(API_TOKEN_KEY)}` },
+          headers: { 'Authorization': `Bearer ${sessionStorage.getItem(API_TOKEN_KEY)}` },
           body: formData
         });
+
+        const data = await res.json().catch(() => null);
+
         if (res.ok) {
-          alert('Pen successfully published to Aeropen!');
+          alert('Pen successfully published with all photos!');
           document.getElementById('add-pen-form').reset();
+          selectedFiles = [];
+          updatePreview();
           loadAdminPens();
         } else {
-          alert('Failed to upload.');
+          alert(`Failed to upload: ${data?.error || data?.message || 'Server error'}`);
         }
       } catch (err) {
-        alert('Upload failed due to connection error.');
+        alert(`Connection error: ${err.message}`);
       } finally {
         btn.innerText = 'Publish Pen to Website';
         btn.disabled = false;
@@ -350,7 +582,7 @@
       if (!confirm('Are you sure you want to remove this pen from the store?')) return;
       await fetch(`/api/products/${id}`, {
         method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${localStorage.getItem(API_TOKEN_KEY)}` }
+        headers: { 'Authorization': `Bearer ${sessionStorage.getItem(API_TOKEN_KEY)}` }
       });
       loadAdminPens();
     }

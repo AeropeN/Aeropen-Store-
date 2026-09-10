@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en" class="scroll-smooth">
 <head>
+<meta name="google-site-verification" content="11HhFcAwz7x8HldHZj-mWcFKcZSLCv8-kflAMusfTUw" />
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>AEROPEN | The Art of Weightless Precision</title>
@@ -9,6 +10,16 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
+  <style>
+    /* Hide scrollbars for sliders while preserving smooth scrolling */
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+  </style>
   <script>
     tailwind.config = {
       theme: {
@@ -60,7 +71,7 @@
         Mastercrafted Writing Instruments
       </span>
       <h1 class="font-serif text-5xl md:text-7xl lg:text-8xl font-normal tracking-tight text-white leading-tight">
-        The weightless grace of every stroke.
+        Write your future & The weightless grace of every stroke.
       </h1>
       <p class="mt-6 text-lg md:text-xl text-brandMuted font-light max-w-2xl mx-auto leading-relaxed">
         Aeropen merges aerospace-grade ergonomics with timeless penmanship. Designed for visionary thoughts, historic signatures, and enduring elegance.
@@ -84,13 +95,12 @@
         <h2 class="font-serif text-4xl md:text-5xl text-white mt-2">Curated Pen Showcase</h2>
       </div>
       <p class="text-brandMuted text-sm max-w-md mt-4 md:mt-0 font-light">
-        Every pen is checked for balance, ink flow viscosity, and tactile balance prior to shipment.
+        Every pen is checked for balance, ink flow viscosity, and tactile balance prior to shipment. Swipe or use arrows to view all angles.
       </p>
     </div>
 
     <!-- Product Grid -->
     <div id="pens-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-      <!-- Loading skeletons will be replaced dynamically -->
       <div class="text-center py-12 text-brandMuted col-span-full">Loading Aeropen collection...</div>
     </div>
   </section>
@@ -129,7 +139,7 @@
       </div>
       <div class="relative">
         <div class="w-full h-96 md:h-[480px] rounded-2xl overflow-hidden border border-white/10 shadow-2xl relative">
-          <img src="https://images.unsplash.com/photo-1585336261026-77cc7c balance?q=80&w=1200&auto=format&fit=crop" 
+          <img src="https://images.unsplash.com/photo-1457298483369-0a95d2b17fcd?q=80&w=1200&auto=format&fit=crop" 
                alt="Aeropen Craftsmanship" 
                class="w-full h-full object-cover grayscale hover:grayscale-0 transition duration-700">
         </div>
@@ -148,7 +158,6 @@
     </div>
 
     <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-      <!-- Direct Contact Card -->
       <div class="bg-brandCard p-8 rounded-2xl border border-white/10 flex flex-col justify-between">
         <div>
           <h3 class="font-serif text-2xl text-white mb-6">Direct Line & Office</h3>
@@ -160,8 +169,8 @@
               </div>
               <div>
                 <p class="text-slate-400 text-xs uppercase tracking-wider">Customer Support Phone</p>
-                <a href="tel:+18005550199" class="text-white text-lg font-semibold hover:text-brandGold transition">
-                  +1 (800) 555-0199 / +91 98765 43210
+                <a href="tel:+917085257963" class="text-white text-lg font-semibold hover:text-brandGold transition">
+                  +91 7085257963 / +91 9362341721
                 </a>
                 <p class="text-brandMuted text-xs mt-0.5">Available Mon – Sat, 9:00 AM – 7:00 PM</p>
               </div>
@@ -173,8 +182,8 @@
               </div>
               <div>
                 <p class="text-slate-400 text-xs uppercase tracking-wider">Direct Email</p>
-                <a href="mailto:concierge@aeropen.com" class="text-white hover:text-brandGold transition">
-                  concierge@aeropen.com
+                <a href="mailto:aeropen.in@gmail.com" class="text-white hover:text-brandGold transition">
+                  aeropen.in@gmail.com
                 </a>
               </div>
             </div>
@@ -185,34 +194,33 @@
               </div>
               <div>
                 <p class="text-slate-400 text-xs uppercase tracking-wider">Aeropen Studio</p>
-                <p class="text-white">Precision Works Building, Atelier Suite 4B</p>
+                <p class="text-white">Agartala West Tripura </p>
               </div>
             </div>
           </div>
         </div>
 
         <div class="mt-8 pt-6 border-t border-white/5 text-xs text-brandMuted">
-          <i class="fa-solid fa-truck-fast text-brandGold mr-2"></i> All orders are shipped via insured express courier with real-time dispatch updates.
+          <i class="fa-solid fa-truck-fast text-brandGold mr-2"></i> All orders are shipped via courier with real-time dispatch updates.
         </div>
       </div>
 
-      <!-- Quick Message Form -->
       <div class="bg-brandCard p-8 rounded-2xl border border-white/10">
         <h3 class="font-serif text-2xl text-white mb-6">Send an Inquiry</h3>
-        <form onsubmit="event.preventDefault(); alert('Thank you. An Aeropen representative will call you shortly.'); this.reset();" class="space-y-4 text-sm">
+        <form id="inquiry-form" onsubmit="submitInquiry(event)" class="space-y-4 text-sm">
           <div>
-            <label class="block text-slate-400 text-xs mb-1">Your Full Name</label>
-            <input type="text" required class="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-3 text-white focus:border-brandGold outline-none" placeholder="Lord Byron">
+            <label class="block text-slate-400 text-xs mb-1">Your Full Name *</label>
+            <input type="text" id="inquiry-name" required class="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-3 text-white focus:border-brandGold outline-none" placeholder="Name">
           </div>
           <div>
-            <label class="block text-slate-400 text-xs mb-1">Phone Number</label>
-            <input type="tel" required class="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-3 text-white focus:border-brandGold outline-none" placeholder="+1 (555) 000-0000">
+            <label class="block text-slate-400 text-xs mb-1">Phone Number *</label>
+            <input type="tel" id="inquiry-phone" required class="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-3 text-white focus:border-brandGold outline-none" placeholder="Phone Number">
           </div>
           <div>
-            <label class="block text-slate-400 text-xs mb-1">Message or Query</label>
-            <textarea rows="3" class="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-3 text-white focus:border-brandGold outline-none" placeholder="I'd like to ask about pen refill options..."></textarea>
+            <label class="block text-slate-400 text-xs mb-1">Message or Query *</label>
+            <textarea id="inquiry-message" rows="3" required class="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-3 text-white focus:border-brandGold outline-none" placeholder="I'd like to ask about pen refill options..."></textarea>
           </div>
-          <button type="submit" class="w-full py-3 rounded-lg bg-white/10 hover:bg-brandGold hover:text-black font-semibold uppercase text-xs tracking-wider transition">
+          <button type="submit" id="btn-submit-inquiry" class="w-full py-3 rounded-lg bg-white/10 hover:bg-brandGold hover:text-black font-semibold uppercase text-xs tracking-wider transition">
             Submit Inquiry
           </button>
         </form>
@@ -225,13 +233,20 @@
     <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
       <div class="font-serif text-xl text-brandGold tracking-widest">AEROPEN</div>
       <p>&copy; <span id="year"></span> Aeropen Instruments Inc. All Rights Reserved. Crafted for seamless writing.</p>
+      
+      <!-- Hidden Admin link -->
       <div class="flex gap-4">
-        <a href="/admin.html" class="hover:text-brandGold transition">Admin Portal</a>
+        <a id="admin-portal-link" 
+           href="/admin.html" 
+           onclick="handleAdminClick(event)"
+           class="opacity-0 select-none cursor-default text-transparent transition-all duration-300">
+          Admin Portal
+        </a>
       </div>
     </div>
   </footer>
 
-  <!-- ORDER MODAL (Pay on Delivery / Direct Dispatch) -->
+  <!-- ORDER MODAL -->
   <div id="order-modal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden items-center justify-center p-4">
     <div class="bg-[#11141A] border border-white/20 rounded-2xl max-w-lg w-full max-h-[92vh] overflow-y-auto p-6 md:p-8 relative shadow-2xl">
       <button onclick="closeOrderModal()" class="absolute top-6 right-6 text-slate-400 hover:text-white text-xl">&times;</button>
@@ -301,7 +316,89 @@
   <script>
     document.getElementById('year').innerText = new Date().getFullYear();
 
-    // Fetch and display products
+    // Admin Secret Reveal Logic
+    let adminVisible = false;
+
+    function handleAdminClick(event) {
+      const link = document.getElementById('admin-portal-link');
+      if (!adminVisible) {
+        event.preventDefault();
+        adminVisible = true;
+        link.classList.remove('opacity-0', 'text-transparent', 'select-none', 'cursor-default');
+        link.classList.add('opacity-100', 'text-brandMuted', 'hover:text-brandGold', 'cursor-pointer');
+      }
+    }
+
+    document.addEventListener('click', (event) => {
+      const link = document.getElementById('admin-portal-link');
+      if (adminVisible && !link.contains(event.target)) {
+        adminVisible = false;
+        link.classList.add('opacity-0', 'text-transparent', 'select-none', 'cursor-default');
+        link.classList.remove('opacity-100', 'text-brandMuted', 'hover:text-brandGold', 'cursor-pointer');
+      }
+    });
+
+    // Send Inquiry Function
+    async function submitInquiry(e) {
+      e.preventDefault();
+      const btn = document.getElementById('btn-submit-inquiry');
+      const originalText = btn.innerText;
+      btn.innerText = 'Submitting...';
+      btn.disabled = true;
+
+      const payload = {
+        name: document.getElementById('inquiry-name').value.trim(),
+        phone: document.getElementById('inquiry-phone').value.trim(),
+        message: document.getElementById('inquiry-message').value.trim()
+      };
+
+      try {
+        const res = await fetch('/api/inquiries', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        const data = await res.json().catch(() => ({}));
+
+        if (res.ok) {
+          alert('Thank you! Your inquiry has been sent to our concierge desk. An Aeropen representative will call you shortly.');
+          document.getElementById('inquiry-form').reset();
+        } else {
+          alert(data.error || 'Failed to submit your inquiry. Please try again.');
+        }
+      } catch (err) {
+        alert('Server unreachable. Please contact us directly by phone.');
+      } finally {
+        btn.innerText = originalText;
+        btn.disabled = false;
+      }
+    }
+
+    // Scroll multi-image slider
+    function scrollPenSlider(penId, direction) {
+      const slider = document.getElementById(`slider-${penId}`);
+      if (slider) {
+        slider.scrollBy({ left: direction * slider.clientWidth, behavior: 'smooth' });
+      }
+    }
+
+    // Sync indicator dots when user swipes or scrolls
+    function updatePenSliderDots(penId) {
+      const slider = document.getElementById(`slider-${penId}`);
+      if (!slider) return;
+      const index = Math.round(slider.scrollLeft / slider.clientWidth);
+      const dots = document.querySelectorAll(`.dot-${penId}`);
+      dots.forEach((dot, i) => {
+        if (i === index) {
+          dot.className = `dot-${penId} w-4 h-1.5 rounded-full bg-brandGold transition-all duration-300`;
+        } else {
+          dot.className = `dot-${penId} w-1.5 h-1.5 rounded-full bg-white/40 transition-all duration-300`;
+        }
+      });
+    }
+
+    // Fetch and display products with multi-image gallery
     async function loadPens() {
       const grid = document.getElementById('pens-grid');
       try {
@@ -313,44 +410,111 @@
           return;
         }
 
-        grid.innerHTML = pens.map(pen => `
-          <div class="bg-brandCard border border-white/10 rounded-2xl overflow-hidden hover:border-brandGold/50 transition-all duration-300 group flex flex-col justify-between">
-            <div class="relative overflow-hidden aspect-[4/3] bg-black/30">
-              <img src="${pen.image_url || 'https://images.unsplash.com/photo-1583485088034-697b5bc54ccd?q=80&w=1000'}" 
-                   alt="${pen.title}" 
-                   class="w-full h-full object-cover group-hover:scale-105 transition duration-500">
-              <span class="absolute top-4 left-4 bg-black/70 backdrop-blur-sm text-[10px] uppercase tracking-widest font-semibold px-3 py-1 rounded-full text-brandGold border border-brandGold/20">
-                ${pen.category || 'Luxury Edition'}
-              </span>
-            </div>
-            <div class="p-6 flex-1 flex flex-col justify-between">
-              <div>
-                <div class="flex justify-between items-baseline gap-2">
-                  <h3 class="font-serif text-2xl text-white group-hover:text-brandGold transition">${pen.title}</h3>
-                  <span class="font-serif text-2xl text-brandGold">$${pen.price}</span>
+        grid.innerHTML = pens.map(pen => {
+          // Extract multiple images safely from array, JSON string, or single string
+          let images = [];
+          if (Array.isArray(pen.images) && pen.images.length > 0) {
+            images = pen.images;
+          } else if (typeof pen.image_url === 'string' && pen.image_url.trim()) {
+            try {
+              const parsed = JSON.parse(pen.image_url);
+              images = Array.isArray(parsed) ? parsed : [pen.image_url];
+            } catch (e) {
+              images = pen.image_url.split(/[\n,]+/).map(s => s.trim()).filter(Boolean);
+            }
+          }
+
+          if (images.length === 0) {
+            images = ['https://images.unsplash.com/photo-1457298483369-0a95d2b17fcd?q=80&w=1000'];
+          }
+
+          const hasMultiple = images.length > 1;
+
+          return `
+            <div class="bg-brandCard border border-white/10 rounded-2xl overflow-hidden hover:border-brandGold/50 transition-all duration-300 group flex flex-col justify-between">
+              
+              <!-- Multi-image Carousel Box -->
+              <div class="relative overflow-hidden aspect-[4/3] bg-black/30 group/slider select-none">
+                
+                <!-- Horizontal Swipe/Scroll Track -->
+                <div id="slider-${pen.id}" 
+                     onscroll="updatePenSliderDots(${pen.id})"
+                     class="flex w-full h-full overflow-x-auto snap-x snap-mandatory scroll-smooth no-scrollbar">
+                  ${images.map((img, idx) => `
+                    <div class="w-full h-full flex-shrink-0 snap-center relative">
+                      <img src="${img}" 
+                           onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1457298483369-0a95d2b17fcd?q=80&w=1000';" 
+                           alt="${pen.title} - View ${idx + 1}" 
+                           class="w-full h-full object-cover">
+                    </div>
+                  `).join('')}
                 </div>
-                <p class="text-brandGold/90 text-xs italic mt-1 font-serif">${pen.tagline || ''}</p>
-                <p class="text-brandMuted text-xs mt-3 leading-relaxed line-clamp-3">${pen.description || ''}</p>
+
+                <!-- Category Badge -->
+                <span class="absolute top-4 left-4 z-10 bg-black/75 backdrop-blur-sm text-[10px] uppercase tracking-widest font-semibold px-3 py-1 rounded-full text-brandGold border border-brandGold/20 pointer-events-none">
+                  ${pen.category || 'Luxury Edition'}
+                </span>
+
+                ${hasMultiple ? `
+                  <!-- Photo Count Pill -->
+                  <span class="absolute top-4 right-4 z-10 bg-black/75 backdrop-blur-sm text-[10px] font-medium px-2.5 py-0.5 rounded-full text-white/80 border border-white/15 pointer-events-none">
+                    <i class="fa-regular fa-images text-brandGold mr-1"></i>${images.length}
+                  </span>
+
+                  <!-- Left / Right Navigation Arrow Buttons -->
+                  <button type="button" 
+                          onclick="scrollPenSlider(${pen.id}, -1)" 
+                          aria-label="Previous image"
+                          class="absolute left-2.5 top-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-full bg-black/70 hover:bg-brandGold hover:text-black text-white flex items-center justify-center text-xs opacity-0 group-hover/slider:opacity-100 md:group-hover/slider:opacity-100 transition duration-200 shadow-lg">
+                    <i class="fa-solid fa-chevron-left"></i>
+                  </button>
+
+                  <button type="button" 
+                          onclick="scrollPenSlider(${pen.id}, 1)" 
+                          aria-label="Next image"
+                          class="absolute right-2.5 top-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-full bg-black/70 hover:bg-brandGold hover:text-black text-white flex items-center justify-center text-xs opacity-0 group-hover/slider:opacity-100 md:group-hover/slider:opacity-100 transition duration-200 shadow-lg">
+                    <i class="fa-solid fa-chevron-right"></i>
+                  </button>
+
+                  <!-- Slider Indicator Dots -->
+                  <div class="absolute bottom-3 inset-x-0 z-10 flex justify-center items-center gap-1.5 pointer-events-none">
+                    ${images.map((_, i) => `
+                      <span class="dot-${pen.id} ${i === 0 ? 'w-4 h-1.5 bg-brandGold' : 'w-1.5 h-1.5 bg-white/40'} rounded-full transition-all duration-300"></span>
+                    `).join('')}
+                  </div>
+                ` : ''}
+
               </div>
 
-              <button onclick="openOrderModal(${pen.id}, '${pen.title.replace(/'/g, "\\'")}', '${pen.price}')" 
-                      class="mt-6 w-full py-3 rounded-lg border border-brandGold/40 text-brandGold hover:bg-brandGold hover:text-black font-semibold text-xs tracking-wider uppercase transition">
-                Order This Pen
-              </button>
+              <!-- Product Details -->
+              <div class="p-6 flex-1 flex flex-col justify-between">
+                <div>
+                  <div class="flex justify-between items-baseline gap-2">
+                    <h3 class="font-serif text-2xl text-white group-hover:text-brandGold transition">${pen.title}</h3>
+                    <span class="font-serif text-2xl text-brandGold">₹${pen.price}</span>
+                  </div>
+                  <p class="text-brandGold/90 text-xs italic mt-1 font-serif">${pen.tagline || ''}</p>
+                  <p class="text-brandMuted text-xs mt-3 leading-relaxed line-clamp-3">${pen.description || ''}</p>
+                </div>
+
+                <button onclick="openOrderModal(${pen.id}, '${pen.title.replace(/'/g, "\\'")}', '${pen.price}')" 
+                        class="mt-6 w-full py-3 rounded-lg border border-brandGold/40 text-brandGold hover:bg-brandGold hover:text-black font-semibold text-xs tracking-wider uppercase transition">
+                  Order This Pen
+                </button>
+              </div>
             </div>
-          </div>
-        `).join('');
+          `;
+        }).join('');
       } catch (err) {
         grid.innerHTML = `<div class="col-span-full text-center text-red-400">Failed to load pens. Please verify server connectivity.</div>`;
       }
     }
 
-    // Modal Operations
     function openOrderModal(id, title, price) {
       document.getElementById('order-product-id').value = id;
       document.getElementById('order-product-title').value = title;
       document.getElementById('modal-pen-title').innerText = title;
-      document.getElementById('modal-pen-price').innerText = `$${price}`;
+      document.getElementById('modal-pen-price').innerText = `₹${price}`;
       const modal = document.getElementById('order-modal');
       modal.classList.remove('hidden');
       modal.classList.add('flex');
@@ -362,7 +526,6 @@
       modal.classList.remove('flex');
     }
 
-    // Submit Order to backend
     async function submitOrder(e) {
       e.preventDefault();
       const btn = document.getElementById('submit-order-btn');
