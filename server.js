@@ -7,11 +7,38 @@ const bcrypt = require('bcryptjs');
 const multer = require('multer');
 const fs = require('fs');
 
+// Cloudinary Libraries for Permanent Image Storage
+const cloudinary = require('cloudinary').v2;
+const { CloudinaryStorage } = require('multer-storage-cloudinary');
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 const JWT_SECRET = process.env.JWT_SECRET || 'aeropen-super-secret-key-2026';
 const ADMIN_USERNAME = process.env.ADMIN_USER || 'AeropeN';
 const ADMIN_PASSWORD = process.env.ADMIN_PASS || 'aeropen@2026';
+
+// Configure Cloudinary
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
+
+// Cloudinary Storage Engine for Multer (Images stay forever!)
+const storage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: 'aeropen_pens',
+    allowed_formats: ['jpg', 'jpeg', 'png', 'webp'],
+  },
+});
+
+// Configure Multer to accept up to 3 images safely
+const upload = multer({ storage });
+const productUpload = upload.fields([
+  { name: 'penImages', maxCount: 3 },
+  { name: 'penImage', maxCount: 1 }
+]);
 
 // Middleware
 app.use(cors());
@@ -22,12 +49,6 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.static(__dirname));
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-
-// Ensure uploads folder exists
-const uploadsDir = path.join(__dirname, 'uploads');
-if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir, { recursive: true });
-}
 
 // FIXES "Cannot GET /": Directly sends index.html
 app.get('/', (req, res) => {
@@ -56,22 +77,6 @@ app.get('/admin', (req, res) => {
     res.status(404).send('<h2>admin.html file not found!</h2>');
   }
 });
-
-// Multer Storage Configuration
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, uploadsDir),
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, 'aeropen-' + uniqueSuffix + path.extname(file.originalname));
-  }
-});
-
-// Configure Multer to accept up to 3 images safely
-const upload = multer({ storage });
-const productUpload = upload.fields([
-  { name: 'penImages', maxCount: 3 },
-  { name: 'penImage', maxCount: 1 }
-]);
 
 // Database Initialization (SQLite)
 const db = new sqlite3.Database('./aeropen.db', (err) => {
@@ -191,7 +196,7 @@ app.get('/api/products', (req, res) => {
   });
 });
 
-// Product Upload: Accepts up to 3 images
+// Product Upload: Uploads directly to Cloudinary and saves permanent HTTPS URLs
 app.post('/api/products', authenticateAdmin, productUpload, (req, res) => {
   try {
     const { title, tagline, price, category, description, imageUrlDirect } = req.body;
@@ -202,14 +207,16 @@ app.post('/api/products', authenticateAdmin, productUpload, (req, res) => {
 
     let imageList = [];
 
+    // Cloudinary stores the permanent online image URL in `file.path`
     if (req.files && req.files.penImages && req.files.penImages.length > 0) {
-      imageList = req.files.penImages.map(f => `/uploads/${f.filename}`);
+      imageList = req.files.penImages.map(f => f.path);
     } else if (req.files && req.files.penImage && req.files.penImage.length > 0) {
-      imageList = [`/uploads/${req.files.penImage[0].filename}`];
+      imageList = [req.files.penImage[0].path];
     }
 
-    if (imageList.length === 0 && imageUrlDirect) {
-      imageList = imageUrlDirect.split(/[\n,]+/).map(u => u.trim()).filter(Boolean);
+    if (imageUrlDirect) {
+      const direct = imageUrlDirect.split(/[\n,]+/).map(u => u.trim()).filter(Boolean);
+      imageList = [...imageList, ...direct];
     }
 
     const savedImagesJson = JSON.stringify(imageList);
