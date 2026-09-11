@@ -406,6 +406,37 @@
       }
     });
 
+    // Helper: format dates to Day/Month/Year and correct 12-hour local time
+    function formatDispatchDate(dateStr) {
+      if (!dateStr) return 'Recently updated';
+
+      let isoStr = dateStr;
+      if (typeof dateStr === 'string') {
+        const trimmed = dateStr.trim();
+        // Convert SQLite UTC format ("YYYY-MM-DD HH:MM:SS") to ISO-8601 UTC
+        if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}/.test(trimmed)) {
+          isoStr = trimmed.replace(' ', 'T') + (trimmed.endsWith('Z') ? '' : 'Z');
+        }
+      }
+
+      const d = new Date(isoStr);
+      if (isNaN(d.getTime())) return 'Recently updated';
+
+      // Format Day/Month/Year
+      const day = String(d.getDate()).padStart(2, '0');
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const year = d.getFullYear();
+
+      // Format local time with AM/PM
+      let hours = d.getHours();
+      const minutes = String(d.getMinutes()).padStart(2, '0');
+      const ampm = hours >= 12 ? 'PM' : 'AM';
+      hours = hours % 12 || 12;
+      const formattedHours = String(hours).padStart(2, '0');
+
+      return `${day}/${month}/${year}, ${formattedHours}:${minutes} ${ampm}`;
+    }
+
     // ORDER TRACKING LOGIC
     const STAGES = [
       { key: 'placed', label: 'Order Placed', icon: 'fa-file-invoice' },
@@ -544,7 +575,7 @@
                 ${order.latest_scan || 'Consignment verified by Master Craftsman. Packed in velvet-lined gift case awaiting transit hub dispatch.'}
               </div>
               <p class="text-[10px] text-brandMuted">
-                <i class="fa-regular fa-clock mr-1"></i> ${order.updated_at ? new Date(order.updated_at).toLocaleString() : 'Recently updated'}
+                <i class="fa-regular fa-clock mr-1"></i> ${formatDispatchDate(order.updated_at)}
               </p>
             </div>
           </div>

@@ -97,6 +97,7 @@ async function initDatabase() {
     try { await db.execute('ALTER TABLE orders ADD COLUMN awb_number TEXT'); } catch (e) {}
     try { await db.execute('ALTER TABLE orders ADD COLUMN estimated_delivery TEXT'); } catch (e) {}
     try { await db.execute('ALTER TABLE orders ADD COLUMN latest_scan TEXT'); } catch (e) {}
+    try { await db.execute('ALTER TABLE orders ADD COLUMN updated_at DATETIME'); } catch (e) {}
 
     await db.execute(`
       CREATE TABLE IF NOT EXISTS inquiries (
@@ -200,7 +201,7 @@ app.get('/api/products', async (req, res) => {
       }
       return {
         id: r.id,
-        title: r.title,
+        title: r.tagline ? r.title : r.title,
         tagline: r.tagline,
         price: r.price,
         category: r.category,
@@ -300,11 +301,8 @@ app.get('/api/orders/:id/track', async (req, res) => {
     const rawId = req.params.id;
     const orderId = rawId.replace(/^#?AERO-?/i, '').trim();
 
-    // Fetches the actual courier, AWB, and status saved by the admin
     const result = await db.execute({
-      sql: `SELECT id, product_title, customer_name, city, pincode, quantity, status, 
-                   courier_name, awb_number, estimated_delivery, latest_scan, created_at 
-            FROM orders WHERE id = ?`,
+      sql: `SELECT * FROM orders WHERE id = ?`,
       args: [orderId]
     });
 
@@ -327,6 +325,13 @@ app.get('/api/orders/:id/track', async (req, res) => {
       statusKey = 'confirmed';
     }
 
+    // Format SQLite timestamp into ISO-8601 UTC ("YYYY-MM-DDTHH:MM:SSZ") so local time is accurate
+    const rawTimestamp = order.updated_at || order.created_at;
+    let isoTimestamp = rawTimestamp;
+    if (rawTimestamp && typeof rawTimestamp === 'string' && !rawTimestamp.includes('T')) {
+      isoTimestamp = rawTimestamp.replace(' ', 'T') + 'Z';
+    }
+
     res.json({
       id: order.id,
       order_reference: `AERO-${order.id}`,
@@ -336,12 +341,11 @@ app.get('/api/orders/:id/track', async (req, res) => {
       quantity: order.quantity || 1,
       status: statusKey,
       status_label: order.status || 'Processing',
-      // Uses the admin-set values or fallback if not yet assigned:
       courier_name: order.courier_name || 'Carrier to be assigned',
       awb_number: order.awb_number || 'Awaiting dispatch generation',
       estimated_delivery: order.estimated_delivery || '3 - 5 Business Days',
       latest_scan: order.latest_scan || 'Consignment verified and awaiting workshop release.',
-      updated_at: order.created_at
+      updated_at: isoTimestamp
     });
   } catch (err) {
     console.error('Tracking query error:', err);
@@ -360,6 +364,49 @@ app.get('/api/orders', authenticateAdmin, async (req, res) => {
 });
 
 // =======================================================
+// ADMIN UPDATE: CUSTOMER CONTACT & DELIVERY DETAILS
+// =======================================================
+app.patch('/api/orders/:id/details', authenticateAdmin, async (req, res) => {
+  try {
+    const { customer_name, phone, email, address, city, pincode, order_notes, quantity } = req.body;
+
+    if (!customer_name || !phone || !address || !pincode) {
+      return res.status(400).json({ error: 'Customer name, phone, address, and pincode are required.' });
+    }
+
+    await db.execute({
+      sql: `UPDATE orders 
+            SET customer_name = ?,
+                phone = ?,
+                email = ?,
+                address = ?,
+                city = ?,
+                pincode = ?,
+                order_notes = COALESCE(?, order_notes),
+                quantity = COALESCE(?, quantity),
+                updated_at = CURRENT_TIMESTAMP
+            WHERE id = ?`,
+      args: [
+        customer_name.trim(),
+        phone.trim(),
+        email ? email.trim() : null,
+        address.trim(),
+        city.trim(),
+        pincode.trim(),
+        order_notes !== undefined ? order_notes.trim() : null,
+        quantity !== undefined ? Number(quantity) : null,
+        req.params.id
+      ]
+    });
+
+    res.json({ success: true, message: 'Customer & delivery details updated successfully.' });
+  } catch (err) {
+    console.error('Update customer details error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// =======================================================
 // ADMIN MANUAL UPDATE: STATUS, COURIER & AWB NUMBER
 // =======================================================
 app.patch('/api/orders/:id/status', authenticateAdmin, async (req, res) => {
@@ -372,7 +419,8 @@ app.patch('/api/orders/:id/status', authenticateAdmin, async (req, res) => {
                 courier_name = COALESCE(?, courier_name),
                 awb_number = COALESCE(?, awb_number),
                 estimated_delivery = COALESCE(?, estimated_delivery),
-                latest_scan = COALESCE(?, latest_scan)
+                latest_scan = COALESCE(?, latest_scan),
+                updated_at = CURRENT_TIMESTAMP
             WHERE id = ?`,
       args: [
         status || null,
