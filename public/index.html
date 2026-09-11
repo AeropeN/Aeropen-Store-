@@ -203,9 +203,14 @@
     <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
       <div class="bg-brandCard p-8 rounded-2xl border border-white/10 flex flex-col justify-between">
         <div>
-          <h3 class="font-serif text-2xl text-white mb-6">Direct Line & Office</h3>
+          <!-- Heading with WhatsApp Logo & Link Between 'Direct Line' and 'Office' -->
+          <h3 class="font-serif text-2xl text-white mb-6 flex flex-wrap items-center gap-2">
+            <span>Direct Line</span>
+            <span>& Office</span>
+          </h3>
           
           <div class="space-y-6 text-sm">
+            <!-- 1. Customer Support Phone -->
             <div class="flex items-start gap-4">
               <div class="w-10 h-10 rounded-full bg-brandGold/10 flex items-center justify-center text-brandGold">
                 <i class="fa-solid fa-phone"></i>
@@ -219,6 +224,25 @@
               </div>
             </div>
 
+            <!-- 2. WhatsApp Direct Chat Item (Between Direct Line & Office) -->
+            <div class="flex items-start gap-4">
+              <div class="w-10 h-10 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-400 text-lg">
+                <i class="fa-brands fa-whatsapp"></i>
+              </div>
+              <div>
+                <p class="text-slate-400 text-xs uppercase tracking-wider">WhatsApp Direct</p>
+                <a href="https://wa.me/917085257963?text=Hello%20Aeropen%2C%20I%20would%20like%20to%20inquire%20about%20your%20pens." 
+                   target="_blank" 
+                   rel="noopener noreferrer" 
+                   class="text-white text-lg font-semibold hover:text-emerald-400 transition flex items-center gap-2">
+                  +91 7085257963
+                  <span class="text-[10px] px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 uppercase tracking-wider font-sans font-medium">Chat Now</span>
+                </a>
+                <p class="text-brandMuted text-xs mt-0.5">Click to chat instantly on WhatsApp</p>
+              </div>
+            </div>
+
+            <!-- 3. Direct Email -->
             <div class="flex items-start gap-4">
               <div class="w-10 h-10 rounded-full bg-brandGold/10 flex items-center justify-center text-brandGold">
                 <i class="fa-solid fa-envelope"></i>
@@ -231,12 +255,13 @@
               </div>
             </div>
 
+            <!-- 4. Aeropen Studio (Office) -->
             <div class="flex items-start gap-4">
               <div class="w-10 h-10 rounded-full bg-brandGold/10 flex items-center justify-center text-brandGold">
                 <i class="fa-solid fa-location-dot"></i>
               </div>
               <div>
-                <p class="text-slate-400 text-xs uppercase tracking-wider">Aeropen Studio</p>
+                <p class="text-slate-400 text-xs uppercase tracking-wider">Aeropen Studio (Office)</p>
                 <p class="text-white">Agartala West Tripura </p>
               </div>
             </div>
@@ -399,7 +424,6 @@
 
       if (!rawId) return;
 
-      // Extract numerical ID if prefixed with AERO- or #
       const cleanId = rawId.replace(/^#?AERO-?/i, '').trim();
 
       btn.disabled = true;
@@ -440,7 +464,6 @@
     function renderTrackingTimeline(order, rawSearchTerm) {
       const resultDiv = document.getElementById('tracking-result');
 
-      // Normalize status step
       const statusMap = {
         'placed': 0,
         'confirmed': 1,
@@ -458,7 +481,6 @@
 
       resultDiv.innerHTML = `
         <div class="space-y-8 animate-fadeIn">
-          <!-- Shipment Header -->
           <div class="flex flex-col sm:flex-row justify-between sm:items-center gap-4 bg-black/40 p-4 rounded-xl border border-white/5">
             <div>
               <span class="text-[10px] text-brandGold uppercase tracking-widest font-semibold">Aeropen Consignment</span>
@@ -477,7 +499,6 @@
             </div>
           </div>
 
-          <!-- Stepper Timeline -->
           <div class="relative py-4">
             <div class="grid grid-cols-2 md:grid-cols-5 gap-4 relative">
               ${STAGES.map((st, idx) => {
@@ -500,7 +521,6 @@
             </div>
           </div>
 
-          <!-- Logistics Details & Scan Updates -->
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
             <div class="p-4 rounded-xl bg-black/30 border border-white/5 space-y-2">
               <p class="text-slate-400 uppercase tracking-wider text-[10px] font-semibold">Courier & Dispatch Info</p>
