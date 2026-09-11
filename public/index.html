@@ -48,7 +48,6 @@
         <span class="font-serif text-3xl font-bold tracking-widest text-brandGold uppercase">AEROPEN</span>
       </a>
       <div class="hidden md:flex items-center gap-8 text-sm font-medium tracking-wider uppercase text-slate-300">
-        <a href="#collection" class="hover:text-brandGold transition">Collection</a>
         <a href="#tracking" class="hover:text-brandGold transition"><i class="fa-solid fa-truck-fast text-brandGold mr-1.5"></i>Track Order</a>
         <a href="#about" class="hover:text-brandGold transition">Our Heritage</a>
         <a href="#contact" class="hover:text-brandGold transition">Concierge</a>
@@ -79,14 +78,6 @@
       <p class="mt-6 text-lg md:text-xl text-brandMuted font-light max-w-2xl mx-auto leading-relaxed">
         Aeropen merges aerospace-grade ergonomics with timeless penmanship. Designed for visionary thoughts, historic signatures, and enduring elegance.
       </p>
-      <div class="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
-        <a href="#collection" class="w-full sm:w-auto px-8 py-4 rounded-full bg-brandGold text-black font-semibold text-sm tracking-wider uppercase hover:bg-brandGoldHover transition shadow-lg shadow-brandGold/20">
-          Browse Collection
-        </a>
-        <a href="#tracking" class="w-full sm:w-auto px-8 py-4 rounded-full border border-brandGold/40 hover:border-brandGold text-brandGold text-sm tracking-wider uppercase transition bg-brandGold/5">
-          <i class="fa-solid fa-location-crosshairs mr-2"></i>Track Shipment
-        </a>
-      </div>
     </div>
   </header>
 
@@ -203,7 +194,6 @@
     <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
       <div class="bg-brandCard p-8 rounded-2xl border border-white/10 flex flex-col justify-between">
         <div>
-          <!-- Heading with WhatsApp Logo & Link Between 'Direct Line' and 'Office' -->
           <h3 class="font-serif text-2xl text-white mb-6 flex flex-wrap items-center gap-2">
             <span>Direct Line</span>
             <span>& Office</span>
@@ -224,7 +214,7 @@
               </div>
             </div>
 
-            <!-- 2. WhatsApp Direct Chat Item (Between Direct Line & Office) -->
+            <!-- 2. WhatsApp Direct Chat Item -->
             <div class="flex items-start gap-4">
               <div class="w-10 h-10 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-400 text-lg">
                 <i class="fa-brands fa-whatsapp"></i>
@@ -413,7 +403,6 @@
       let isoStr = dateStr;
       if (typeof dateStr === 'string') {
         const trimmed = dateStr.trim();
-        // Convert SQLite UTC format ("YYYY-MM-DD HH:MM:SS") to ISO-8601 UTC
         if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}/.test(trimmed)) {
           isoStr = trimmed.replace(' ', 'T') + (trimmed.endsWith('Z') ? '' : 'Z');
         }
@@ -422,12 +411,10 @@
       const d = new Date(isoStr);
       if (isNaN(d.getTime())) return 'Recently updated';
 
-      // Format Day/Month/Year
       const day = String(d.getDate()).padStart(2, '0');
       const month = String(d.getMonth() + 1).padStart(2, '0');
       const year = d.getFullYear();
 
-      // Format local time with AM/PM
       let hours = d.getHours();
       const minutes = String(d.getMinutes()).padStart(2, '0');
       const ampm = hours >= 12 ? 'PM' : 'AM';
