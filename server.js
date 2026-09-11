@@ -57,7 +57,7 @@ const db = createClient({
   authToken: cleanToken,
 });
 
-// Initialize database tables
+// Initialize database tables & columns
 async function initDatabase() {
   try {
     await db.execute(`
@@ -91,6 +91,12 @@ async function initDatabase() {
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
       )
     `);
+
+    // Safely add shipping columns if they don't exist yet
+    try { await db.execute('ALTER TABLE orders ADD COLUMN courier_name TEXT'); } catch (e) {}
+    try { await db.execute('ALTER TABLE orders ADD COLUMN awb_number TEXT'); } catch (e) {}
+    try { await db.execute('ALTER TABLE orders ADD COLUMN estimated_delivery TEXT'); } catch (e) {}
+    try { await db.execute('ALTER TABLE orders ADD COLUMN latest_scan TEXT'); } catch (e) {}
 
     await db.execute(`
       CREATE TABLE IF NOT EXISTS inquiries (
@@ -265,7 +271,7 @@ app.delete('/api/products/:id', authenticateAdmin, async (req, res) => {
   }
 });
 
-// Orders Routes
+// Orders: Create Order (Customer)
 app.post('/api/orders', async (req, res) => {
   try {
     const { customer_name, phone, email, address, city, pincode, product_id, product_title, quantity, order_notes } = req.body;
@@ -286,6 +292,64 @@ app.post('/api/orders', async (req, res) => {
   }
 });
 
+// =======================================================
+// CUSTOMER LIVE PARCEL TRACKING ROUTE (PUBLIC)
+// =======================================================
+app.get('/api/orders/:id/track', async (req, res) => {
+  try {
+    const rawId = req.params.id;
+    const orderId = rawId.replace(/^#?AERO-?/i, '').trim();
+
+    // Fetches the actual courier, AWB, and status saved by the admin
+    const result = await db.execute({
+      sql: `SELECT id, product_title, customer_name, city, pincode, quantity, status, 
+                   courier_name, awb_number, estimated_delivery, latest_scan, created_at 
+            FROM orders WHERE id = ?`,
+      args: [orderId]
+    });
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: `No consignment found for order reference #AERO-${orderId}.` });
+    }
+
+    const order = result.rows[0];
+    const currentStatus = (order.status || 'Pending Dispatch').toLowerCase();
+
+    // Determine timeline step based on actual status
+    let statusKey = 'placed';
+    if (currentStatus.includes('delivered') || currentStatus.includes('complete')) {
+      statusKey = 'delivered';
+    } else if (currentStatus.includes('out for delivery')) {
+      statusKey = 'out_for_delivery';
+    } else if (currentStatus.includes('dispatch') || currentStatus.includes('transit') || currentStatus.includes('shipped')) {
+      statusKey = 'dispatched';
+    } else if (currentStatus.includes('confirm') || currentStatus.includes('process')) {
+      statusKey = 'confirmed';
+    }
+
+    res.json({
+      id: order.id,
+      order_reference: `AERO-${order.id}`,
+      product_title: order.product_title,
+      city: order.city,
+      pincode: order.pincode,
+      quantity: order.quantity || 1,
+      status: statusKey,
+      status_label: order.status || 'Processing',
+      // Uses the admin-set values or fallback if not yet assigned:
+      courier_name: order.courier_name || 'Carrier to be assigned',
+      awb_number: order.awb_number || 'Awaiting dispatch generation',
+      estimated_delivery: order.estimated_delivery || '3 - 5 Business Days',
+      latest_scan: order.latest_scan || 'Consignment verified and awaiting workshop release.',
+      updated_at: order.created_at
+    });
+  } catch (err) {
+    console.error('Tracking query error:', err);
+    res.status(500).json({ error: 'Failed to retrieve tracking details.' });
+  }
+});
+
+// Orders: Get All (Admin)
 app.get('/api/orders', authenticateAdmin, async (req, res) => {
   try {
     const result = await db.execute('SELECT * FROM orders ORDER BY id DESC');
@@ -295,14 +359,34 @@ app.get('/api/orders', authenticateAdmin, async (req, res) => {
   }
 });
 
+// =======================================================
+// ADMIN MANUAL UPDATE: STATUS, COURIER & AWB NUMBER
+// =======================================================
 app.patch('/api/orders/:id/status', authenticateAdmin, async (req, res) => {
   try {
+    const { status, courier_name, awb_number, estimated_delivery, latest_scan } = req.body;
+
     await db.execute({
-      sql: 'UPDATE orders SET status = ? WHERE id = ?',
-      args: [req.body.status, req.params.id]
+      sql: `UPDATE orders 
+            SET status = COALESCE(?, status),
+                courier_name = COALESCE(?, courier_name),
+                awb_number = COALESCE(?, awb_number),
+                estimated_delivery = COALESCE(?, estimated_delivery),
+                latest_scan = COALESCE(?, latest_scan)
+            WHERE id = ?`,
+      args: [
+        status || null,
+        courier_name !== undefined ? courier_name : null,
+        awb_number !== undefined ? awb_number : null,
+        estimated_delivery !== undefined ? estimated_delivery : null,
+        latest_scan !== undefined ? latest_scan : null,
+        req.params.id
+      ]
     });
-    res.json({ success: true, message: 'Order status updated.' });
+
+    res.json({ success: true, message: 'Shipping details updated successfully.' });
   } catch (err) {
+    console.error('Update order status error:', err);
     res.status(500).json({ error: err.message });
   }
 });

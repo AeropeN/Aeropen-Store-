@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en" class="scroll-smooth">
 <head>
-<meta name="google-site-verification" content="11HhFcAwz7x8HldHZj-mWcFKcZSLCv8-kflAMusfTUw" />
+  <meta name="google-site-verification" content="11HhFcAwz7x8HldHZj-mWcFKcZSLCv8-kflAMusfTUw" />
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>AEROPEN | The Art of Weightless Precision</title>
@@ -11,7 +11,6 @@
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
   <style>
-    /* Hide scrollbars for sliders while preserving smooth scrolling */
     .no-scrollbar::-webkit-scrollbar {
       display: none;
     }
@@ -50,10 +49,14 @@
       </a>
       <div class="hidden md:flex items-center gap-8 text-sm font-medium tracking-wider uppercase text-slate-300">
         <a href="#collection" class="hover:text-brandGold transition">Collection</a>
+        <a href="#tracking" class="hover:text-brandGold transition"><i class="fa-solid fa-truck-fast text-brandGold mr-1.5"></i>Track Order</a>
         <a href="#about" class="hover:text-brandGold transition">Our Heritage</a>
         <a href="#contact" class="hover:text-brandGold transition">Concierge</a>
       </div>
-      <div>
+      <div class="flex items-center gap-3">
+        <a href="#tracking" class="md:hidden p-2 text-brandGold hover:text-white transition" title="Track Order">
+          <i class="fa-solid fa-truck-fast text-lg"></i>
+        </a>
         <a href="#collection" class="px-5 py-2.5 rounded-full border border-brandGold/40 hover:border-brandGold bg-brandGold/10 text-brandGold hover:bg-brandGold hover:text-black transition text-xs font-semibold uppercase tracking-wider">
           Explore Pens
         </a>
@@ -80,8 +83,8 @@
         <a href="#collection" class="w-full sm:w-auto px-8 py-4 rounded-full bg-brandGold text-black font-semibold text-sm tracking-wider uppercase hover:bg-brandGoldHover transition shadow-lg shadow-brandGold/20">
           Browse Collection
         </a>
-        <a href="#about" class="w-full sm:w-auto px-8 py-4 rounded-full border border-white/20 hover:border-white/50 text-slate-200 text-sm tracking-wider uppercase transition">
-          Discover Aeropen
+        <a href="#tracking" class="w-full sm:w-auto px-8 py-4 rounded-full border border-brandGold/40 hover:border-brandGold text-brandGold text-sm tracking-wider uppercase transition bg-brandGold/5">
+          <i class="fa-solid fa-location-crosshairs mr-2"></i>Track Shipment
         </a>
       </div>
     </div>
@@ -102,6 +105,46 @@
     <!-- Product Grid -->
     <div id="pens-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
       <div class="text-center py-12 text-brandMuted col-span-full">Loading Aeropen collection...</div>
+    </div>
+  </section>
+
+  <!-- Order Tracking Section -->
+  <section id="tracking" class="py-24 px-6 bg-black/40 border-t border-white/5 relative">
+    <div class="max-w-4xl mx-auto">
+      <div class="text-center mb-12">
+        <span class="text-brandGold text-xs uppercase tracking-[0.25em]">Dispatch & Logistics</span>
+        <h2 class="font-serif text-4xl md:text-5xl text-white mt-2">Track Your Aeropen</h2>
+        <p class="text-brandMuted text-sm mt-3 font-light max-w-md mx-auto">
+          Enter your Order ID (e.g. <span class="text-brandGold">AERO-1001</span> or <span class="text-brandGold">1001</span>) to view the real-time status of your parcel.
+        </p>
+      </div>
+
+      <!-- Search Input Card -->
+      <div class="bg-brandCard p-6 md:p-8 rounded-2xl border border-white/10 shadow-2xl">
+        <form id="tracking-form" onsubmit="handleTrackOrder(event)" class="flex flex-col sm:flex-row gap-3">
+          <div class="relative flex-1">
+            <span class="absolute inset-y-0 left-4 flex items-center text-brandMuted pointer-events-none">
+              <i class="fa-solid fa-magnifying-glass text-sm"></i>
+            </span>
+            <input 
+              type="text" 
+              id="track-order-id" 
+              required 
+              placeholder="e.g. AERO-1042" 
+              class="w-full bg-black/50 border border-white/10 rounded-xl pl-11 pr-4 py-3.5 text-white placeholder-slate-500 focus:border-brandGold outline-none transition uppercase tracking-wider text-sm font-medium">
+          </div>
+          <button 
+            type="submit" 
+            id="btn-track"
+            class="px-8 py-3.5 rounded-xl bg-brandGold hover:bg-brandGoldHover text-black font-semibold text-xs uppercase tracking-widest transition duration-200 flex items-center justify-center gap-2">
+            <span>Locate Parcel</span>
+            <i class="fa-solid fa-arrow-right text-xs"></i>
+          </button>
+        </form>
+
+        <!-- Tracking Result Card (Dynamically injected) -->
+        <div id="tracking-result" class="hidden mt-8 pt-8 border-t border-white/10"></div>
+      </div>
     </div>
   </section>
 
@@ -338,6 +381,157 @@
       }
     });
 
+    // ORDER TRACKING LOGIC
+    const STAGES = [
+      { key: 'placed', label: 'Order Placed', icon: 'fa-file-invoice' },
+      { key: 'confirmed', label: 'Confirmed & Tuning', icon: 'fa-microchip' },
+      { key: 'dispatched', label: 'Dispatched / In Transit', icon: 'fa-truck-fast' },
+      { key: 'out_for_delivery', label: 'Out for Delivery', icon: 'fa-box-open' },
+      { key: 'delivered', label: 'Delivered', icon: 'fa-circle-check' }
+    ];
+
+    async function handleTrackOrder(e) {
+      if (e) e.preventDefault();
+      const input = document.getElementById('track-order-id');
+      const rawId = input.value.trim();
+      const resultDiv = document.getElementById('tracking-result');
+      const btn = document.getElementById('btn-track');
+
+      if (!rawId) return;
+
+      // Extract numerical ID if prefixed with AERO- or #
+      const cleanId = rawId.replace(/^#?AERO-?/i, '').trim();
+
+      btn.disabled = true;
+      btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Locating...`;
+      resultDiv.classList.remove('hidden');
+      resultDiv.innerHTML = `<div class="text-center py-6 text-brandMuted"><i class="fa-solid fa-circle-notch fa-spin text-brandGold mr-2"></i> Querying dispatch logistics registry...</div>`;
+
+      try {
+        const res = await fetch(`/api/orders/${encodeURIComponent(cleanId)}/track`);
+        
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          resultDiv.innerHTML = `
+            <div class="p-6 rounded-xl bg-red-950/20 border border-red-500/30 text-center">
+              <i class="fa-solid fa-triangle-exclamation text-2xl text-red-400 mb-2"></i>
+              <h4 class="text-white font-medium text-sm">Shipment Not Found</h4>
+              <p class="text-xs text-brandMuted mt-1">${err.error || `No consignment found for order reference "${rawId}". Please double-check the order ID.`}</p>
+            </div>
+          `;
+          return;
+        }
+
+        const data = await res.json();
+        renderTrackingTimeline(data, rawId);
+
+      } catch (err) {
+        resultDiv.innerHTML = `
+          <div class="p-6 rounded-xl bg-red-950/20 border border-red-500/30 text-center">
+            <p class="text-sm text-red-400">Unable to reach parcel tracking server. Please verify your connection or try again later.</p>
+          </div>
+        `;
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = `<span>Locate Parcel</span><i class="fa-solid fa-arrow-right text-xs"></i>`;
+      }
+    }
+
+    function renderTrackingTimeline(order, rawSearchTerm) {
+      const resultDiv = document.getElementById('tracking-result');
+
+      // Normalize status step
+      const statusMap = {
+        'placed': 0,
+        'confirmed': 1,
+        'processing': 1,
+        'packed': 1,
+        'dispatched': 2,
+        'in_transit': 2,
+        'shipped': 2,
+        'out_for_delivery': 3,
+        'delivered': 4
+      };
+
+      const currentStep = statusMap[(order.status || '').toLowerCase()] ?? 0;
+      const displayId = order.order_reference || (order.id ? `AERO-${order.id}` : rawSearchTerm);
+
+      resultDiv.innerHTML = `
+        <div class="space-y-8 animate-fadeIn">
+          <!-- Shipment Header -->
+          <div class="flex flex-col sm:flex-row justify-between sm:items-center gap-4 bg-black/40 p-4 rounded-xl border border-white/5">
+            <div>
+              <span class="text-[10px] text-brandGold uppercase tracking-widest font-semibold">Aeropen Consignment</span>
+              <h4 class="text-xl font-serif text-white tracking-wide mt-0.5">#${displayId}</h4>
+              <p class="text-xs text-slate-400 mt-0.5">Destination: <span class="text-slate-200">${order.city || 'Standard Address'}</span> (${order.pincode || 'Verified'})</p>
+            </div>
+            <div class="sm:text-right">
+              <span class="inline-block px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider ${
+                currentStep === 4 ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' :
+                currentStep >= 2 ? 'bg-brandGold/20 text-brandGold border border-brandGold/30' :
+                'bg-blue-500/20 text-blue-400 border border-blue-500/30'
+              }">
+                ${order.status_label || order.status || 'In Preparation'}
+              </span>
+              ${order.estimated_delivery ? `<p class="text-[11px] text-brandMuted mt-1">Est. Arrival: <span class="text-white">${order.estimated_delivery}</span></p>` : ''}
+            </div>
+          </div>
+
+          <!-- Stepper Timeline -->
+          <div class="relative py-4">
+            <div class="grid grid-cols-2 md:grid-cols-5 gap-4 relative">
+              ${STAGES.map((st, idx) => {
+                const isPassed = idx <= currentStep;
+                const isCurrent = idx === currentStep;
+                return `
+                  <div class="flex flex-col items-center text-center relative z-10">
+                    <div class="w-10 h-10 rounded-full flex items-center justify-center text-sm transition-all duration-300 ${
+                      isPassed 
+                        ? 'bg-brandGold text-black font-bold shadow-lg shadow-brandGold/20 ring-4 ring-brandGold/20' 
+                        : 'bg-black/60 border border-white/20 text-brandMuted'
+                    }">
+                      <i class="fa-solid ${st.icon}"></i>
+                    </div>
+                    <span class="text-xs font-medium mt-3 ${isPassed ? 'text-white' : 'text-slate-500'}">${st.label}</span>
+                    ${isCurrent ? '<span class="text-[10px] text-brandGold font-semibold uppercase tracking-widest mt-0.5 animate-pulse">Current Stage</span>' : ''}
+                  </div>
+                `;
+              }).join('')}
+            </div>
+          </div>
+
+          <!-- Logistics Details & Scan Updates -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+            <div class="p-4 rounded-xl bg-black/30 border border-white/5 space-y-2">
+              <p class="text-slate-400 uppercase tracking-wider text-[10px] font-semibold">Courier & Dispatch Info</p>
+              <div class="flex justify-between py-1 border-b border-white/5">
+                <span class="text-brandMuted">Carrier Partner</span>
+                <span class="text-white font-medium">${order.courier_name || 'BlueDart / Delhivery Express'}</span>
+              </div>
+              <div class="flex justify-between py-1 border-b border-white/5">
+                <span class="text-brandMuted">Waybill / AWB</span>
+                <span class="text-brandGold font-mono">${order.awb_number || 'Generated on pickup'}</span>
+              </div>
+              <div class="flex justify-between py-1">
+                <span class="text-brandMuted">Item</span>
+                <span class="text-white">${order.product_title || 'Aeropen Writing Instrument'} (Qty: ${order.quantity || 1})</span>
+              </div>
+            </div>
+
+            <div class="p-4 rounded-xl bg-black/30 border border-white/5 space-y-2">
+              <p class="text-slate-400 uppercase tracking-wider text-[10px] font-semibold">Latest Dispatch Scan</p>
+              <div class="text-slate-300 leading-relaxed">
+                ${order.latest_scan || 'Consignment verified by Master Craftsman. Packed in velvet-lined gift case awaiting transit hub dispatch.'}
+              </div>
+              <p class="text-[10px] text-brandMuted">
+                <i class="fa-regular fa-clock mr-1"></i> ${order.updated_at ? new Date(order.updated_at).toLocaleString() : 'Recently updated'}
+              </p>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
     // Send Inquiry Function
     async function submitInquiry(e) {
       e.preventDefault();
@@ -383,7 +577,6 @@
       }
     }
 
-    // Sync indicator dots when user swipes or scrolls
     function updatePenSliderDots(penId) {
       const slider = document.getElementById(`slider-${penId}`);
       if (!slider) return;
@@ -398,7 +591,6 @@
       });
     }
 
-    // Fetch and display products with multi-image gallery
     async function loadPens() {
       const grid = document.getElementById('pens-grid');
       try {
@@ -411,7 +603,6 @@
         }
 
         grid.innerHTML = pens.map(pen => {
-          // Extract multiple images safely from array, JSON string, or single string
           let images = [];
           if (Array.isArray(pen.images) && pen.images.length > 0) {
             images = pen.images;
@@ -432,11 +623,7 @@
 
           return `
             <div class="bg-brandCard border border-white/10 rounded-2xl overflow-hidden hover:border-brandGold/50 transition-all duration-300 group flex flex-col justify-between">
-              
-              <!-- Multi-image Carousel Box -->
               <div class="relative overflow-hidden aspect-[4/3] bg-black/30 group/slider select-none">
-                
-                <!-- Horizontal Swipe/Scroll Track -->
                 <div id="slider-${pen.id}" 
                      onscroll="updatePenSliderDots(${pen.id})"
                      class="flex w-full h-full overflow-x-auto snap-x snap-mandatory scroll-smooth no-scrollbar">
@@ -450,18 +637,15 @@
                   `).join('')}
                 </div>
 
-                <!-- Category Badge -->
                 <span class="absolute top-4 left-4 z-10 bg-black/75 backdrop-blur-sm text-[10px] uppercase tracking-widest font-semibold px-3 py-1 rounded-full text-brandGold border border-brandGold/20 pointer-events-none">
                   ${pen.category || 'Luxury Edition'}
                 </span>
 
                 ${hasMultiple ? `
-                  <!-- Photo Count Pill -->
                   <span class="absolute top-4 right-4 z-10 bg-black/75 backdrop-blur-sm text-[10px] font-medium px-2.5 py-0.5 rounded-full text-white/80 border border-white/15 pointer-events-none">
                     <i class="fa-regular fa-images text-brandGold mr-1"></i>${images.length}
                   </span>
 
-                  <!-- Left / Right Navigation Arrow Buttons -->
                   <button type="button" 
                           onclick="scrollPenSlider(${pen.id}, -1)" 
                           aria-label="Previous image"
@@ -476,17 +660,14 @@
                     <i class="fa-solid fa-chevron-right"></i>
                   </button>
 
-                  <!-- Slider Indicator Dots -->
                   <div class="absolute bottom-3 inset-x-0 z-10 flex justify-center items-center gap-1.5 pointer-events-none">
                     ${images.map((_, i) => `
                       <span class="dot-${pen.id} ${i === 0 ? 'w-4 h-1.5 bg-brandGold' : 'w-1.5 h-1.5 bg-white/40'} rounded-full transition-all duration-300"></span>
                     `).join('')}
                   </div>
                 ` : ''}
-
               </div>
 
-              <!-- Product Details -->
               <div class="p-6 flex-1 flex flex-col justify-between">
                 <div>
                   <div class="flex justify-between items-baseline gap-2">
@@ -553,9 +734,15 @@
         });
         const result = await res.json();
         if (res.ok) {
-          alert(`Order placed successfully!\nReference ID: #AERO-${result.orderId}\nWe will contact you at ${orderData.phone} to confirm dispatch.`);
+          const formattedId = `AERO-${result.orderId}`;
+          alert(`Order placed successfully!\nReference ID: #${formattedId}\nWe will contact you at ${orderData.phone} to confirm dispatch.`);
           document.getElementById('order-form').reset();
           closeOrderModal();
+
+          // Pre-populate tracking and scroll to tracking section
+          document.getElementById('track-order-id').value = formattedId;
+          handleTrackOrder();
+          document.getElementById('tracking').scrollIntoView({ behavior: 'smooth' });
         } else {
           alert(result.error || 'Something went wrong.');
         }
