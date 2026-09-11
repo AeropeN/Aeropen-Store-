@@ -24,7 +24,7 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const JWT_SECRET = process.env.JWT_SECRET || 'aeropen-super-secret-key-2026';
 const ADMIN_USERNAME = process.env.ADMIN_USER || 'AeropeN';
-const ADMIN_PASSWORD = process.env.ADMIN_PASS || 'aeropen@2026';
+const ADMIN_PASSWORD = process.env.ADMIN_PASS || 'AeropeN@2026';
 
 // 2. Configure Cloudinary
 cloudinary.config({
