@@ -92,11 +92,12 @@ async function initDatabase() {
       )
     `);
 
-    // Safely add shipping columns if they don't exist yet
+    // Safely add shipping and payment columns if they don't exist yet
     try { await db.execute('ALTER TABLE orders ADD COLUMN courier_name TEXT'); } catch (e) {}
     try { await db.execute('ALTER TABLE orders ADD COLUMN awb_number TEXT'); } catch (e) {}
     try { await db.execute('ALTER TABLE orders ADD COLUMN estimated_delivery TEXT'); } catch (e) {}
     try { await db.execute('ALTER TABLE orders ADD COLUMN latest_scan TEXT'); } catch (e) {}
+    try { await db.execute('ALTER TABLE orders ADD COLUMN payment_terms TEXT'); } catch (e) {}
     try { await db.execute('ALTER TABLE orders ADD COLUMN updated_at DATETIME'); } catch (e) {}
 
     await db.execute(`
@@ -332,17 +333,21 @@ app.get('/api/orders/:id/track', async (req, res) => {
       isoTimestamp = rawTimestamp.replace(' ', 'T') + 'Z';
     }
 
+    // Returns customer_name and full delivery address so it is visible in customer tracking
     res.json({
       id: order.id,
       order_reference: `AERO-${order.id}`,
-      product_title: order.product_title,
+      customer_name: order.customer_name,
+      address: order.address,
       city: order.city,
       pincode: order.pincode,
+      product_title: order.product_title,
       quantity: order.quantity || 1,
       status: statusKey,
       status_label: order.status || 'Processing',
       courier_name: order.courier_name || 'Carrier to be assigned',
       awb_number: order.awb_number || 'Awaiting dispatch generation',
+      payment_terms: order.payment_terms || 'Standard Direct Order / Verified Dispatch',
       estimated_delivery: order.estimated_delivery || '3 - 5 Business Days',
       latest_scan: order.latest_scan || 'Consignment verified and awaiting workshop release.',
       updated_at: isoTimestamp
@@ -407,11 +412,11 @@ app.patch('/api/orders/:id/details', authenticateAdmin, async (req, res) => {
 });
 
 // =======================================================
-// ADMIN MANUAL UPDATE: STATUS, COURIER & AWB NUMBER
+// ADMIN MANUAL UPDATE: STATUS, COURIER, AWB & PAYMENT TERMS
 // =======================================================
 app.patch('/api/orders/:id/status', authenticateAdmin, async (req, res) => {
   try {
-    const { status, courier_name, awb_number, estimated_delivery, latest_scan } = req.body;
+    const { status, courier_name, awb_number, estimated_delivery, latest_scan, payment_terms } = req.body;
 
     await db.execute({
       sql: `UPDATE orders 
@@ -420,6 +425,7 @@ app.patch('/api/orders/:id/status', authenticateAdmin, async (req, res) => {
                 awb_number = COALESCE(?, awb_number),
                 estimated_delivery = COALESCE(?, estimated_delivery),
                 latest_scan = COALESCE(?, latest_scan),
+                payment_terms = COALESCE(?, payment_terms),
                 updated_at = CURRENT_TIMESTAMP
             WHERE id = ?`,
       args: [
@@ -428,11 +434,12 @@ app.patch('/api/orders/:id/status', authenticateAdmin, async (req, res) => {
         awb_number !== undefined ? awb_number : null,
         estimated_delivery !== undefined ? estimated_delivery : null,
         latest_scan !== undefined ? latest_scan : null,
+        payment_terms !== undefined ? payment_terms : null,
         req.params.id
       ]
     });
 
-    res.json({ success: true, message: 'Shipping details updated successfully.' });
+    res.json({ success: true, message: 'Shipping & payment details updated successfully.' });
   } catch (err) {
     console.error('Update order status error:', err);
     res.status(500).json({ error: err.message });
