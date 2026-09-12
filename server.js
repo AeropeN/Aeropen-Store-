@@ -93,7 +93,7 @@ async function initDatabase() {
       )
     `);
 
-    // Safely add shipping, packaging, and payment columns if they don't exist yet
+    // Safely add shipping, packaging, payment, cancellation, and visibility columns
     try { await db.execute('ALTER TABLE orders ADD COLUMN packaging_type TEXT DEFAULT "Pieces"'); } catch (e) {}
     try { await db.execute('ALTER TABLE orders ADD COLUMN courier_name TEXT'); } catch (e) {}
     try { await db.execute('ALTER TABLE orders ADD COLUMN awb_number TEXT'); } catch (e) {}
@@ -101,6 +101,8 @@ async function initDatabase() {
     try { await db.execute('ALTER TABLE orders ADD COLUMN latest_scan TEXT'); } catch (e) {}
     try { await db.execute('ALTER TABLE orders ADD COLUMN payment_terms TEXT'); } catch (e) {}
     try { await db.execute('ALTER TABLE orders ADD COLUMN updated_at DATETIME'); } catch (e) {}
+    try { await db.execute('ALTER TABLE orders ADD COLUMN cancellation_reason TEXT'); } catch (e) {}
+    try { await db.execute('ALTER TABLE orders ADD COLUMN is_logistics_enabled INTEGER DEFAULT 1'); } catch (e) {}
 
     await db.execute(`
       CREATE TABLE IF NOT EXISTS inquiries (
@@ -143,7 +145,7 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Serve files
+// Serve static files
 app.use(express.static(__dirname));
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
@@ -178,6 +180,31 @@ function authenticateAdmin(req, res, next) {
   });
 }
 
+// Robust UTC datetime parser for SQLite timestamps
+function parseSqliteDate(dateVal) {
+  if (!dateVal) return new Date();
+  if (dateVal instanceof Date) return dateVal;
+  if (typeof dateVal === 'number') {
+    return new Date(dateVal < 1e11 ? dateVal * 1000 : dateVal);
+  }
+  let str = String(dateVal).trim();
+  if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(\.\d+)?$/.test(str)) {
+    return new Date(str.replace(' ', 'T') + 'Z');
+  }
+  if (!str.endsWith('Z') && !str.includes('+') && str.includes('T')) {
+    return new Date(str + 'Z');
+  }
+  return new Date(str);
+}
+
+// Status helper: returns true only when order has truly left the facility
+function isOrderDispatched(status) {
+  if (!status) return false;
+  const s = status.toLowerCase().trim();
+  if (s.includes('pending')) return false;
+  return s.includes('dispatch') || s.includes('transit') || s.includes('shipped') || s.includes('out for delivery') || s.includes('delivered');
+}
+
 // ---------------- API ROUTES ----------------
 
 // Admin Login
@@ -204,7 +231,7 @@ app.get('/api/products', async (req, res) => {
       }
       return {
         id: r.id,
-        title: r.tagline ? r.title : r.title,
+        title: r.title,
         tagline: r.tagline,
         price: r.price,
         category: r.category,
@@ -287,8 +314,8 @@ app.post('/api/orders', async (req, res) => {
     const resolvedPackaging = (packaging_type || packaging || 'Pieces').toString().trim() || 'Pieces';
 
     const result = await db.execute({
-      sql: `INSERT INTO orders (customer_name, phone, email, address, city, pincode, product_id, product_title, quantity, packaging_type, order_notes)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      sql: `INSERT INTO orders (customer_name, phone, email, address, city, pincode, product_id, product_title, quantity, packaging_type, order_notes, is_logistics_enabled)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)`,
       args: [customer_name, phone, email, address, city, pincode, product_id, product_title, quantity || 1, resolvedPackaging, order_notes || '']
     });
 
@@ -298,9 +325,7 @@ app.post('/api/orders', async (req, res) => {
   }
 });
 
-// =======================================================
-// CUSTOMER LIVE PARCEL TRACKING ROUTE (PUBLIC)
-// =======================================================
+// Customer Live Parcel Tracking Route
 app.get('/api/orders/:id/track', async (req, res) => {
   try {
     const rawId = req.params.id;
@@ -318,48 +343,214 @@ app.get('/api/orders/:id/track', async (req, res) => {
     const order = result.rows[0];
     const currentStatus = (order.status || 'Pending Dispatch').toLowerCase();
 
-    // Determine timeline step based on actual status
     let statusKey = 'placed';
-    if (currentStatus.includes('delivered') || currentStatus.includes('complete')) {
+    if (currentStatus.includes('cancel')) {
+      statusKey = 'cancelled';
+    } else if (currentStatus.includes('delivered') || currentStatus.includes('complete')) {
       statusKey = 'delivered';
     } else if (currentStatus.includes('out for delivery')) {
       statusKey = 'out_for_delivery';
-    } else if (currentStatus.includes('dispatch') || currentStatus.includes('transit') || currentStatus.includes('shipped')) {
+    } else if (isOrderDispatched(order.status)) {
       statusKey = 'dispatched';
-    } else if (currentStatus.includes('confirm') || currentStatus.includes('process')) {
+    } else if (currentStatus.includes('confirm') || currentStatus.includes('tuning') || currentStatus.includes('process')) {
       statusKey = 'confirmed';
+    } else {
+      statusKey = 'placed';
     }
 
-    // Format SQLite timestamp into ISO-8601 UTC ("YYYY-MM-DDTHH:MM:SSZ") so local time is accurate
-    const rawTimestamp = order.updated_at || order.created_at;
-    let isoTimestamp = rawTimestamp;
-    if (rawTimestamp && typeof rawTimestamp === 'string' && !rawTimestamp.includes('T')) {
-      isoTimestamp = rawTimestamp.replace(' ', 'T') + 'Z';
-    }
+    const createdAt = parseSqliteDate(order.created_at);
+    const nowMs = Date.now();
+    const elapsedMinutes = Math.max(0, (nowMs - createdAt.getTime()) / (1000 * 60));
+    const isCancelled = currentStatus.includes('cancel');
+    const isDispatched = isOrderDispatched(order.status);
 
-    // Return customer details, product title, quantity AND packaging_type
+    const canEdit = !isCancelled && !isDispatched && elapsedMinutes <= 60;
+    const canCancel = !isCancelled && !isDispatched && elapsedMinutes <= 30;
+    const editRemainingMins = canEdit ? Math.max(0, Math.ceil(60 - elapsedMinutes)) : 0;
+    const cancelRemainingMins = canCancel ? Math.max(0, Math.ceil(30 - elapsedMinutes)) : 0;
+
     res.json({
       id: order.id,
       order_reference: `AERO-${order.id}`,
       customer_name: order.customer_name,
+      phone: order.phone,
+      email: order.email || '',
       address: order.address,
       city: order.city,
       pincode: order.pincode,
+      product_id: order.product_id,
       product_title: order.product_title,
       quantity: order.quantity || 1,
       packaging_type: order.packaging_type || 'Pieces',
+      order_notes: order.order_notes || '',
       status: statusKey,
-      status_label: order.status || 'Processing',
-      courier_name: order.courier_name || 'Carrier to be assigned',
-      awb_number: order.awb_number || 'Awaiting dispatch generation',
-      payment_terms: order.payment_terms || 'Standard Direct Order / Verified Dispatch',
+      status_label: order.status || 'Pending Dispatch',
+      courier_name: order.courier_name || '',
+      awb_number: order.awb_number || '',
+      payment_terms: order.payment_terms || 'Prepaid (UPI / Card / NetBanking)',
+      is_logistics_enabled: order.is_logistics_enabled !== undefined ? Number(order.is_logistics_enabled) : 1,
       estimated_delivery: order.estimated_delivery || '3 - 5 Business Days',
       latest_scan: order.latest_scan || 'Consignment verified and awaiting workshop release.',
-      updated_at: isoTimestamp
+      created_at: createdAt.toISOString(),
+      updated_at: parseSqliteDate(order.updated_at || order.created_at).toISOString(),
+      can_edit: canEdit,
+      can_cancel: canCancel,
+      edit_remaining_mins: editRemainingMins,
+      cancel_remaining_mins: cancelRemainingMins
     });
   } catch (err) {
     console.error('Tracking query error:', err);
     res.status(500).json({ error: 'Failed to retrieve tracking details.' });
+  }
+});
+
+// Customer Self-Service Edit (1 Hour)
+app.patch('/api/orders/:id/customer-edit', async (req, res) => {
+  try {
+    const rawId = req.params.id;
+    const orderId = rawId.replace(/^#?AERO-?/i, '').trim();
+
+    const check = await db.execute({
+      sql: 'SELECT * FROM orders WHERE id = ?',
+      args: [orderId]
+    });
+
+    if (check.rows.length === 0) {
+      return res.status(404).json({ error: 'Order not found.' });
+    }
+
+    const order = check.rows[0];
+    const statusLower = (order.status || '').toLowerCase();
+
+    if (statusLower.includes('cancel')) {
+      return res.status(400).json({ error: 'Cancelled orders cannot be modified.' });
+    }
+    if (isOrderDispatched(order.status)) {
+      return res.status(400).json({ error: 'Order has already been dispatched and cannot be edited online.' });
+    }
+
+    const createdAt = parseSqliteDate(order.created_at);
+    const elapsedMinutes = (Date.now() - createdAt.getTime()) / (1000 * 60);
+
+    if (elapsedMinutes > 60) {
+      return res.status(403).json({
+        error: 'Edit window expired. Order modifications are only permitted within 1 hour of placing the order.'
+      });
+    }
+
+    const { customer_name, phone, email, address, city, pincode, product_title, product_id, quantity, packaging_type, packaging, order_notes } = req.body;
+
+    if (!customer_name || !phone || !address || !city || !pincode || !product_title) {
+      return res.status(400).json({ error: 'Customer name, phone, address, city, pincode, and item are mandatory.' });
+    }
+
+    const resolvedPackaging = (packaging_type || packaging || 'Pieces').toString().trim() || 'Pieces';
+
+    await db.execute({
+      sql: `UPDATE orders 
+            SET customer_name = ?,
+                phone = ?,
+                email = ?,
+                address = ?,
+                city = ?,
+                pincode = ?,
+                product_title = ?,
+                product_id = COALESCE(?, product_id),
+                quantity = ?,
+                packaging_type = ?,
+                order_notes = ?,
+                updated_at = CURRENT_TIMESTAMP
+            WHERE id = ?`,
+      args: [
+        customer_name.trim(),
+        phone.trim(),
+        email ? email.trim() : null,
+        address.trim(),
+        city.trim(),
+        pincode.trim(),
+        product_title.trim(),
+        product_id || null,
+        Math.max(1, Number(quantity) || 1),
+        resolvedPackaging,
+        order_notes !== undefined ? order_notes.trim() : (order.order_notes || ''),
+        orderId
+      ]
+    });
+
+    res.json({ success: true, message: 'Order details updated successfully within the 1-hour window.' });
+  } catch (err) {
+    console.error('Customer edit error:', err);
+    res.status(500).json({ error: err.message || 'Failed to update order details.' });
+  }
+});
+
+// Customer Order Cancellation (30 Minutes)
+app.post('/api/orders/:id/cancel', async (req, res) => {
+  try {
+    const rawId = req.params.id;
+    const orderId = rawId.replace(/^#?AERO-?/i, '').trim();
+    const { reason } = req.body;
+
+    if (!reason || !reason.trim()) {
+      return res.status(400).json({ error: 'Please enter a cancellation reason.' });
+    }
+
+    const check = await db.execute({
+      sql: 'SELECT * FROM orders WHERE id = ?',
+      args: [orderId]
+    });
+
+    if (check.rows.length === 0) {
+      return res.status(404).json({ error: 'Order not found.' });
+    }
+
+    const order = check.rows[0];
+    const statusLower = (order.status || '').toLowerCase();
+
+    if (statusLower.includes('cancel')) {
+      return res.status(400).json({ error: 'This order is already cancelled.' });
+    }
+    if (isOrderDispatched(order.status)) {
+      return res.status(400).json({ error: 'Order is already in transit/dispatched and cannot be cancelled.' });
+    }
+
+    const createdAt = parseSqliteDate(order.created_at);
+    const elapsedMinutes = (Date.now() - createdAt.getTime()) / (1000 * 60);
+
+    if (elapsedMinutes > 30) {
+      return res.status(403).json({
+        error: 'Cancellation window expired. Orders can only be cancelled within 30 minutes of placement.'
+      });
+    }
+
+    await db.execute({
+      sql: `UPDATE orders 
+            SET status = 'Cancelled',
+                cancellation_reason = ?,
+                latest_scan = 'Order cancelled by customer. Workshop preparation halted.',
+                updated_at = CURRENT_TIMESTAMP
+            WHERE id = ?`,
+      args: [reason.trim(), orderId]
+    });
+
+    res.json({ success: true, message: 'Your order has been cancelled successfully.' });
+  } catch (err) {
+    console.error('Customer cancellation error:', err);
+    res.status(500).json({ error: err.message || 'Failed to cancel order.' });
+  }
+});
+
+// Admin: Delete/Clear Cancellation Reason
+app.delete('/api/orders/:id/cancellation-reason', authenticateAdmin, async (req, res) => {
+  try {
+    await db.execute({
+      sql: `UPDATE orders SET cancellation_reason = NULL, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
+      args: [req.params.id]
+    });
+    res.json({ success: true, message: 'Cancellation reason deleted successfully.' });
+  } catch (err) {
+    console.error('Delete cancellation reason error:', err);
+    res.status(500).json({ error: err.message });
   }
 });
 
@@ -373,9 +564,7 @@ app.get('/api/orders', authenticateAdmin, async (req, res) => {
   }
 });
 
-// =======================================================
-// ADMIN UPDATE: CUSTOMER CONTACT & DELIVERY DETAILS
-// =======================================================
+// Admin Update: Customer Contact & Delivery Details
 app.patch('/api/orders/:id/details', authenticateAdmin, async (req, res) => {
   try {
     const { customer_name, phone, email, address, city, pincode, order_notes, quantity, packaging_type, packaging } = req.body;
@@ -420,12 +609,21 @@ app.patch('/api/orders/:id/details', authenticateAdmin, async (req, res) => {
   }
 });
 
-// =======================================================
-// ADMIN MANUAL UPDATE: STATUS, COURIER, AWB & LOGISTICS
-// =======================================================
+// Admin Manual Update: Status, Courier, AWB, Payment Terms & Logistics
 app.patch('/api/orders/:id/status', authenticateAdmin, async (req, res) => {
   try {
-    const { status, courier_name, awb_number, estimated_delivery, latest_scan, payment_terms, quantity, packaging_type, packaging } = req.body;
+    const {
+      status,
+      courier_name,
+      awb_number,
+      estimated_delivery,
+      latest_scan,
+      payment_terms,
+      quantity,
+      packaging_type,
+      packaging,
+      is_logistics_enabled
+    } = req.body;
 
     const resolvedPackaging = (packaging_type !== undefined ? packaging_type : packaging !== undefined ? packaging : null);
 
@@ -439,6 +637,7 @@ app.patch('/api/orders/:id/status', authenticateAdmin, async (req, res) => {
                 payment_terms = COALESCE(?, payment_terms),
                 quantity = COALESCE(?, quantity),
                 packaging_type = COALESCE(?, packaging_type),
+                is_logistics_enabled = COALESCE(?, is_logistics_enabled),
                 updated_at = CURRENT_TIMESTAMP
             WHERE id = ?`,
       args: [
@@ -450,6 +649,7 @@ app.patch('/api/orders/:id/status', authenticateAdmin, async (req, res) => {
         payment_terms !== undefined ? payment_terms : null,
         quantity !== undefined ? Number(quantity) : null,
         resolvedPackaging !== null ? String(resolvedPackaging).trim() : null,
+        is_logistics_enabled !== undefined ? (Number(is_logistics_enabled) ? 1 : 0) : null,
         req.params.id
       ]
     });
