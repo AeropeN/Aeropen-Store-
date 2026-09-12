@@ -292,7 +292,6 @@
       <div class="font-serif text-xl text-brandGold tracking-widest">AEROPEN</div>
       <p>&copy; <span id="year"></span> Aeropen Instruments Inc. All Rights Reserved. Crafted for seamless writing.</p>
       
-      <!-- Hidden Admin link -->
       <div class="flex gap-4">
         <a id="admin-portal-link" 
            href="/admin.html" 
@@ -353,14 +352,21 @@
           </div>
         </div>
 
-        <div class="grid grid-cols-2 gap-4">
-          <div>
-            <label class="block text-slate-400 text-xs mb-1">Quantity</label>
-            <input type="number" id="cust-qty" value="1" min="1" max="10" class="w-full bg-black/50 border border-white/10 rounded-lg px-4 py-2.5 text-white focus:border-brandGold outline-none">
+        <!-- QUANTITY & PACKAGING TYPE -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="block text-slate-400 text-xs mb-1">Quantity *</label>
+              <input type="number" id="cust-qty" value="1" min="1" max="100" class="w-full bg-black/50 border border-white/10 rounded-lg px-3 py-2.5 text-white focus:border-brandGold outline-none font-mono">
+            </div>
+            <div>
+              <label class="block text-slate-400 text-xs mb-1">Packaging Type</label>
+              <input type="text" id="cust-packaging" value="Pieces" placeholder="e.g. Pieces, Packet, Box..." class="w-full bg-black/50 border border-white/10 rounded-lg px-3 py-2.5 text-white focus:border-brandGold outline-none placeholder:text-slate-500 text-xs">
+            </div>
           </div>
           <div>
             <label class="block text-slate-400 text-xs mb-1">Special Notes / Nib Size</label>
-            <input type="text" id="cust-notes" placeholder="Fine / Medium nib" class="w-full bg-black/50 border border-white/10 rounded-lg px-4 py-2.5 text-white focus:border-brandGold outline-none">
+            <input type="text" id="cust-notes" placeholder="Fine / Medium nib, etc." class="w-full bg-black/50 border border-white/10 rounded-lg px-4 py-2.5 text-white focus:border-brandGold outline-none">
           </div>
         </div>
 
@@ -374,7 +380,6 @@
   <script>
     document.getElementById('year').innerText = new Date().getFullYear();
 
-    // Admin Secret Reveal Logic
     let adminVisible = false;
 
     function handleAdminClick(event) {
@@ -396,7 +401,6 @@
       }
     });
 
-    // Helper: format dates to Day/Month/Year and correct 12-hour local time
     function formatDispatchDate(dateStr) {
       if (!dateStr) return 'Recently updated';
 
@@ -424,7 +428,6 @@
       return `${day}/${month}/${year}, ${formattedHours}:${minutes} ${ampm}`;
     }
 
-    // ORDER TRACKING LOGIC
     const STAGES = [
       { key: 'placed', label: 'Order Placed', icon: 'fa-file-invoice' },
       { key: 'confirmed', label: 'Confirmed & Tuning', icon: 'fa-microchip' },
@@ -498,6 +501,9 @@
       const displayId = order.order_reference || (order.id ? `AERO-${order.id}` : rawSearchTerm);
       const fullDeliveryLocation = [order.address, order.city, order.pincode ? `PIN: ${order.pincode}` : ''].filter(Boolean).join(', ');
 
+      // Gracefully resolve packaging type with fallback
+      const packagingType = (order.packaging_type || order.packaging || order.packagingType || order.package_type || 'Pieces').trim();
+
       resultDiv.innerHTML = `
         <div class="space-y-8 animate-fadeIn">
           <!-- Order Summary Header with Customer Name & Address -->
@@ -558,7 +564,6 @@
             <div class="p-4 rounded-xl bg-black/30 border border-white/5 space-y-2">
               <p class="text-slate-400 uppercase tracking-wider text-[10px] font-semibold">Courier & Consignment Details</p>
               
-              <!-- Recipient & Delivery Address Row -->
               <div class="flex justify-between py-1.5 border-b border-white/5">
                 <span class="text-brandMuted">Recipient</span>
                 <span class="text-white font-medium text-right">${order.customer_name || 'Customer'}</span>
@@ -567,7 +572,10 @@
                 <span class="text-brandMuted flex-shrink-0">Delivery Address</span>
                 <span class="text-slate-200 text-right leading-relaxed">${fullDeliveryLocation || 'Address on file'}</span>
               </div>
-
+              <div class="flex justify-between py-1.5 border-b border-white/5">
+                <span class="text-brandMuted">Packaging Type</span>
+                <span class="text-brandGold font-semibold uppercase tracking-wider text-[11px]">${packagingType}</span>
+              </div>
               <div class="flex justify-between py-1.5 border-b border-white/5">
                 <span class="text-brandMuted">Carrier Partner</span>
                 <span class="text-white font-medium">${order.courier_name || 'BlueDart / Delhivery Express'}</span>
@@ -581,8 +589,11 @@
                 <span class="text-brandGold font-medium text-right">${order.payment_terms || 'Standard Direct Order / Verified Dispatch'}</span>
               </div>
               <div class="flex justify-between py-1.5">
-                <span class="text-brandMuted">Item</span>
-                <span class="text-white">${order.product_title || 'Aeropen Writing Instrument'} (Qty: ${order.quantity || 1})</span>
+                <span class="text-brandMuted">Item, Qty & Packaging</span>
+                <span class="text-white text-right font-medium">
+                  ${order.product_title || 'Aeropen Writing Instrument'} 
+                  <span class="text-brandGold">(Qty: ${order.quantity || 1} &bull; ${packagingType})</span>
+                </span>
               </div>
             </div>
 
@@ -590,7 +601,7 @@
               <div>
                 <p class="text-slate-400 uppercase tracking-wider text-[10px] font-semibold mb-2">Latest Dispatch Scan</p>
                 <div class="text-slate-300 leading-relaxed bg-black/20 p-3 rounded-lg border border-white/5">
-                  ${order.latest_scan || 'Consignment verified by Master Craftsman. Packed in velvet-lined gift case awaiting transit hub dispatch.'}
+                  ${order.latest_scan || 'Consignment verified by Master Craftsman. Packed securely awaiting transit hub dispatch.'}
                 </div>
               </div>
               <p class="text-[10px] text-brandMuted pt-2 border-t border-white/5">
@@ -602,7 +613,6 @@
       `;
     }
 
-    // Send Inquiry Function
     async function submitInquiry(e) {
       e.preventDefault();
       const btn = document.getElementById('btn-submit-inquiry');
@@ -639,7 +649,6 @@
       }
     }
 
-    // Scroll multi-image slider
     function scrollPenSlider(penId, direction) {
       const slider = document.getElementById(`slider-${penId}`);
       if (slider) {
@@ -766,6 +775,8 @@
       document.getElementById('order-product-title').value = title;
       document.getElementById('modal-pen-title').innerText = title;
       document.getElementById('modal-pen-price').innerText = `₹${price}`;
+      document.getElementById('cust-qty').value = 1;
+      document.getElementById('cust-packaging').value = 'Pieces';
       const modal = document.getElementById('order-modal');
       modal.classList.remove('hidden');
       modal.classList.add('flex');
@@ -783,6 +794,8 @@
       btn.innerText = 'Processing Order...';
       btn.disabled = true;
 
+      const packagingVal = document.getElementById('cust-packaging').value.trim() || 'Pieces';
+
       const orderData = {
         product_id: document.getElementById('order-product-id').value,
         product_title: document.getElementById('order-product-title').value,
@@ -792,7 +805,9 @@
         address: document.getElementById('cust-address').value,
         city: document.getElementById('cust-city').value,
         pincode: document.getElementById('cust-pincode').value,
-        quantity: document.getElementById('cust-qty').value,
+        quantity: document.getElementById('cust-qty').value || 1,
+        packaging_type: packagingVal,
+        packaging: packagingVal,
         order_notes: document.getElementById('cust-notes').value
       };
 

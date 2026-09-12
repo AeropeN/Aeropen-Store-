@@ -86,13 +86,15 @@ async function initDatabase() {
         product_id INTEGER,
         product_title TEXT,
         quantity INTEGER DEFAULT 1,
+        packaging_type TEXT DEFAULT 'Pieces',
         order_notes TEXT,
         status TEXT DEFAULT 'Pending Dispatch',
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
       )
     `);
 
-    // Safely add shipping and payment columns if they don't exist yet
+    // Safely add shipping, packaging, and payment columns if they don't exist yet
+    try { await db.execute('ALTER TABLE orders ADD COLUMN packaging_type TEXT DEFAULT "Pieces"'); } catch (e) {}
     try { await db.execute('ALTER TABLE orders ADD COLUMN courier_name TEXT'); } catch (e) {}
     try { await db.execute('ALTER TABLE orders ADD COLUMN awb_number TEXT'); } catch (e) {}
     try { await db.execute('ALTER TABLE orders ADD COLUMN estimated_delivery TEXT'); } catch (e) {}
@@ -276,16 +278,18 @@ app.delete('/api/products/:id', authenticateAdmin, async (req, res) => {
 // Orders: Create Order (Customer)
 app.post('/api/orders', async (req, res) => {
   try {
-    const { customer_name, phone, email, address, city, pincode, product_id, product_title, quantity, order_notes } = req.body;
+    const { customer_name, phone, email, address, city, pincode, product_id, product_title, quantity, packaging_type, packaging, order_notes } = req.body;
 
     if (!customer_name || !phone || !address || !pincode || !product_title) {
       return res.status(400).json({ error: 'Please provide all shipping and contact details.' });
     }
 
+    const resolvedPackaging = (packaging_type || packaging || 'Pieces').toString().trim() || 'Pieces';
+
     const result = await db.execute({
-      sql: `INSERT INTO orders (customer_name, phone, email, address, city, pincode, product_id, product_title, quantity, order_notes)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      args: [customer_name, phone, email, address, city, pincode, product_id, product_title, quantity || 1, order_notes || '']
+      sql: `INSERT INTO orders (customer_name, phone, email, address, city, pincode, product_id, product_title, quantity, packaging_type, order_notes)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      args: [customer_name, phone, email, address, city, pincode, product_id, product_title, quantity || 1, resolvedPackaging, order_notes || '']
     });
 
     res.json({ success: true, orderId: Number(result.lastInsertRowid) });
@@ -333,7 +337,7 @@ app.get('/api/orders/:id/track', async (req, res) => {
       isoTimestamp = rawTimestamp.replace(' ', 'T') + 'Z';
     }
 
-    // Returns customer_name and full delivery address so it is visible in customer tracking
+    // Return customer details, product title, quantity AND packaging_type
     res.json({
       id: order.id,
       order_reference: `AERO-${order.id}`,
@@ -343,6 +347,7 @@ app.get('/api/orders/:id/track', async (req, res) => {
       pincode: order.pincode,
       product_title: order.product_title,
       quantity: order.quantity || 1,
+      packaging_type: order.packaging_type || 'Pieces',
       status: statusKey,
       status_label: order.status || 'Processing',
       courier_name: order.courier_name || 'Carrier to be assigned',
@@ -373,11 +378,13 @@ app.get('/api/orders', authenticateAdmin, async (req, res) => {
 // =======================================================
 app.patch('/api/orders/:id/details', authenticateAdmin, async (req, res) => {
   try {
-    const { customer_name, phone, email, address, city, pincode, order_notes, quantity } = req.body;
+    const { customer_name, phone, email, address, city, pincode, order_notes, quantity, packaging_type, packaging } = req.body;
 
     if (!customer_name || !phone || !address || !pincode) {
       return res.status(400).json({ error: 'Customer name, phone, address, and pincode are required.' });
     }
+
+    const resolvedPackaging = (packaging_type !== undefined ? packaging_type : packaging !== undefined ? packaging : null);
 
     await db.execute({
       sql: `UPDATE orders 
@@ -389,6 +396,7 @@ app.patch('/api/orders/:id/details', authenticateAdmin, async (req, res) => {
                 pincode = ?,
                 order_notes = COALESCE(?, order_notes),
                 quantity = COALESCE(?, quantity),
+                packaging_type = COALESCE(?, packaging_type),
                 updated_at = CURRENT_TIMESTAMP
             WHERE id = ?`,
       args: [
@@ -400,6 +408,7 @@ app.patch('/api/orders/:id/details', authenticateAdmin, async (req, res) => {
         pincode.trim(),
         order_notes !== undefined ? order_notes.trim() : null,
         quantity !== undefined ? Number(quantity) : null,
+        resolvedPackaging !== null ? String(resolvedPackaging).trim() : null,
         req.params.id
       ]
     });
@@ -412,11 +421,13 @@ app.patch('/api/orders/:id/details', authenticateAdmin, async (req, res) => {
 });
 
 // =======================================================
-// ADMIN MANUAL UPDATE: STATUS, COURIER, AWB & PAYMENT TERMS
+// ADMIN MANUAL UPDATE: STATUS, COURIER, AWB & LOGISTICS
 // =======================================================
 app.patch('/api/orders/:id/status', authenticateAdmin, async (req, res) => {
   try {
-    const { status, courier_name, awb_number, estimated_delivery, latest_scan, payment_terms } = req.body;
+    const { status, courier_name, awb_number, estimated_delivery, latest_scan, payment_terms, quantity, packaging_type, packaging } = req.body;
+
+    const resolvedPackaging = (packaging_type !== undefined ? packaging_type : packaging !== undefined ? packaging : null);
 
     await db.execute({
       sql: `UPDATE orders 
@@ -426,6 +437,8 @@ app.patch('/api/orders/:id/status', authenticateAdmin, async (req, res) => {
                 estimated_delivery = COALESCE(?, estimated_delivery),
                 latest_scan = COALESCE(?, latest_scan),
                 payment_terms = COALESCE(?, payment_terms),
+                quantity = COALESCE(?, quantity),
+                packaging_type = COALESCE(?, packaging_type),
                 updated_at = CURRENT_TIMESTAMP
             WHERE id = ?`,
       args: [
@@ -435,11 +448,13 @@ app.patch('/api/orders/:id/status', authenticateAdmin, async (req, res) => {
         estimated_delivery !== undefined ? estimated_delivery : null,
         latest_scan !== undefined ? latest_scan : null,
         payment_terms !== undefined ? payment_terms : null,
+        quantity !== undefined ? Number(quantity) : null,
+        resolvedPackaging !== null ? String(resolvedPackaging).trim() : null,
         req.params.id
       ]
     });
 
-    res.json({ success: true, message: 'Shipping & payment details updated successfully.' });
+    res.json({ success: true, message: 'Shipping, packaging & payment details updated successfully.' });
   } catch (err) {
     console.error('Update order status error:', err);
     res.status(500).json({ error: err.message });
