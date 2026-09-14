@@ -433,8 +433,8 @@
         Payable Amount: <span id="payment-modal-order-amount" class="text-brandGold font-mono font-bold text-sm"></span>
       </p>
 
-      <!-- View 1: The Two Options -->
-      <div id="payment-choice-container" class="space-y-4">
+      <!-- View 1: The Three Options (QR, Bank Transfer, Admin Call) -->
+      <div id="payment-choice-container" class="space-y-3.5">
         <!-- Option 1: Payment QR -->
         <button 
           type="button" 
@@ -450,7 +450,22 @@
           <i class="fa-solid fa-chevron-right text-xs text-slate-500 group-hover:text-brandGold transition"></i>
         </button>
 
-        <!-- Option 2: Payment via Admin Call -->
+        <!-- Option 2: Payment via Bank Transfer -->
+        <button 
+          type="button" 
+          onclick="choosePaymentOption('Payment via Bank Transfer')" 
+          class="w-full p-4 rounded-xl bg-black/50 hover:bg-black/80 border border-white/15 hover:border-brandGold transition text-left flex items-center gap-4 group">
+          <div class="w-12 h-12 rounded-lg bg-blue-500/10 text-blue-400 flex items-center justify-center text-xl group-hover:scale-105 transition flex-shrink-0">
+            <i class="fa-solid fa-building-columns"></i>
+          </div>
+          <div class="flex-1">
+            <h4 class="text-sm font-semibold text-white group-hover:text-brandGold transition">Payment via Bank Transfer</h4>
+            <p class="text-[11px] text-slate-400">Transfer directly via NEFT, IMPS, or RTGS to our official bank account.</p>
+          </div>
+          <i class="fa-solid fa-chevron-right text-xs text-slate-500 group-hover:text-brandGold transition"></i>
+        </button>
+
+        <!-- Option 3: Payment via Admin Call -->
         <button 
           type="button" 
           onclick="choosePaymentOption('Payment via Admin Call')" 
@@ -485,7 +500,74 @@
         </button>
       </div>
 
-      <!-- View 3: Admin Call Confirmation Message -->
+      <!-- View 3: Bank Transfer Details Screen -->
+      <div id="payment-bank-screen" class="hidden space-y-4 text-left">
+        <div class="text-center">
+          <div class="w-12 h-12 rounded-full bg-blue-500/15 border border-blue-500/30 text-blue-400 flex items-center justify-center mx-auto mb-2 text-xl shadow-lg">
+            <i class="fa-solid fa-building-columns"></i>
+          </div>
+          <h4 class="font-serif text-2xl text-white font-bold tracking-wide">Bank Transfer Details</h4>
+          <p class="text-[11px] text-brandMuted mt-1">Please transfer the payable amount to our official bank account below:</p>
+        </div>
+
+        <div id="bank-details-loading" class="text-center py-6 text-brandMuted text-xs">
+          <i class="fa-solid fa-circle-notch fa-spin text-brandGold mr-2"></i> Loading official bank account...
+        </div>
+
+        <div id="bank-details-content" class="hidden p-4 rounded-xl bg-black/50 border border-white/10 space-y-2.5 text-xs">
+          <div class="flex justify-between items-center py-1 border-b border-white/5">
+            <span class="text-slate-400">Bank Name</span>
+            <span id="bank-info-name" class="text-white font-semibold text-right"></span>
+          </div>
+          <div class="flex justify-between items-center py-1 border-b border-white/5">
+            <span class="text-slate-400">Account Holder</span>
+            <span id="bank-info-holder" class="text-white font-semibold text-right"></span>
+          </div>
+          <div class="flex justify-between items-center py-1 border-b border-white/5">
+            <span class="text-slate-400">Account Number</span>
+            <div class="flex items-center gap-2">
+              <span id="bank-info-acc" class="text-brandGold font-mono font-bold tracking-wider text-right"></span>
+              <button type="button" onclick="copyBankText('bank-info-acc', this)" class="text-slate-400 hover:text-brandGold text-[10px] p-1 transition" title="Copy Account Number">
+                <i class="fa-regular fa-copy"></i>
+              </button>
+            </div>
+          </div>
+          <div class="flex justify-between items-center py-1 border-b border-white/5">
+            <span class="text-slate-400">IFSC Code</span>
+            <div class="flex items-center gap-2">
+              <span id="bank-info-ifsc" class="text-white font-mono font-semibold text-right"></span>
+              <button type="button" onclick="copyBankText('bank-info-ifsc', this)" class="text-slate-400 hover:text-brandGold text-[10px] p-1 transition" title="Copy IFSC">
+                <i class="fa-regular fa-copy"></i>
+              </button>
+            </div>
+          </div>
+          <div id="bank-info-mobile-row" class="flex justify-between items-center py-1 border-b border-white/5">
+            <span class="text-slate-400">Registered Mobile</span>
+            <span id="bank-info-mobile" class="text-slate-200 font-mono text-right"></span>
+          </div>
+          <div id="bank-info-notes-row" class="pt-1 text-[11px] text-brandMuted leading-relaxed">
+            <span class="text-slate-400 font-medium block mb-0.5">Instructions:</span>
+            <span id="bank-info-notes" class="text-slate-300"></span>
+          </div>
+        </div>
+
+        <div id="bank-details-fallback" class="hidden p-4 rounded-xl bg-black/40 border border-white/10 text-center text-xs text-brandMuted py-6">
+          <i class="fa-solid fa-building-columns text-2xl text-brandGold mb-2"></i>
+          <p class="text-white font-medium">Bank details will be provided directly by concierge.</p>
+          <p class="text-[10px] text-slate-400 mt-1">Our executive will reach out to share the account details.</p>
+        </div>
+
+        <div class="pt-2 text-center">
+          <button 
+            type="button" 
+            onclick="finishPaymentAndTrack()" 
+            class="w-full py-3 rounded-lg bg-brandGold text-black font-semibold text-xs uppercase tracking-wider hover:bg-brandGoldHover transition shadow-lg">
+            I Have Transferred / Track Order
+          </button>
+        </div>
+      </div>
+
+      <!-- View 4: Admin Call Confirmation Message -->
       <div id="payment-call-screen" class="hidden space-y-4 text-center py-4">
         <div class="w-16 h-16 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 flex items-center justify-center mx-auto text-2xl shadow-lg animate-bounce">
           <i class="fa-solid fa-headset"></i>
@@ -797,6 +879,22 @@
     // Print Consignment Invoice Function
     function printOrderInvoice() {
       window.print();
+    }
+
+    // Helper: Copy Bank Details to Clipboard
+    function copyBankText(elementId, btn) {
+      const el = document.getElementById(elementId);
+      if (!el) return;
+      const text = el.innerText.trim();
+      if (!text) return;
+
+      navigator.clipboard.writeText(text).then(() => {
+        const original = btn.innerHTML;
+        btn.innerHTML = '<i class="fa-solid fa-check text-emerald-400"></i>';
+        setTimeout(() => {
+          btn.innerHTML = original;
+        }, 2000);
+      }).catch(() => {});
     }
 
     async function handleTrackOrder(e) {
@@ -1531,9 +1629,10 @@
       document.getElementById('payment-modal-order-ref').innerText = `#${orderRef}`;
       document.getElementById('payment-modal-order-amount').innerText = totalFormatted;
 
-      // Show the choice buttons screen
+      // Reset views: show the choice buttons screen
       document.getElementById('payment-choice-container').classList.remove('hidden');
       document.getElementById('payment-qr-screen').classList.add('hidden');
+      document.getElementById('payment-bank-screen').classList.add('hidden');
       document.getElementById('payment-call-screen').classList.add('hidden');
 
       const modal = document.getElementById('payment-options-modal');
@@ -1541,7 +1640,7 @@
       modal.classList.add('flex');
     }
 
-    // Step 3: Handle Choice ('Payment QR' or 'Payment via Admin Call')
+    // Step 3: Handle Choice ('Payment QR', 'Payment via Bank Transfer', or 'Payment via Admin Call')
     async function choosePaymentOption(chosenMethod) {
       if (!activeCreatedOrderId) return;
 
@@ -1588,6 +1687,55 @@
           }
         } catch (e) {
           qrFallback.innerHTML = `<p class="text-xs text-red-600 py-4">Unable to load QR image. Please contact concierge.</p>`;
+        }
+
+      } else if (chosenMethod === 'Payment via Bank Transfer') {
+        // Load & Show official bank account details
+        const bankScreen = document.getElementById('payment-bank-screen');
+        const loadingEl = document.getElementById('bank-details-loading');
+        const contentEl = document.getElementById('bank-details-content');
+        const fallbackEl = document.getElementById('bank-details-fallback');
+
+        bankScreen.classList.remove('hidden');
+        loadingEl.classList.remove('hidden');
+        contentEl.classList.add('hidden');
+        fallbackEl.classList.add('hidden');
+
+        try {
+          const res = await fetch('/api/bank-details');
+          const data = await res.json();
+          loadingEl.classList.add('hidden');
+
+          if (data && data.success && data.bank_details && (data.bank_details.bank_name || data.bank_details.account_number)) {
+            const b = data.bank_details;
+            document.getElementById('bank-info-name').innerText = b.bank_name || 'N/A';
+            document.getElementById('bank-info-holder').innerText = b.account_holder_name || 'N/A';
+            document.getElementById('bank-info-acc').innerText = b.account_number || 'N/A';
+            document.getElementById('bank-info-ifsc').innerText = b.ifsc_code || 'N/A';
+
+            const mobRow = document.getElementById('bank-info-mobile-row');
+            if (b.registered_mobile) {
+              mobRow.classList.remove('hidden');
+              document.getElementById('bank-info-mobile').innerText = b.registered_mobile;
+            } else {
+              mobRow.classList.add('hidden');
+            }
+
+            const notesRow = document.getElementById('bank-info-notes-row');
+            if (b.bank_notes) {
+              notesRow.classList.remove('hidden');
+              document.getElementById('bank-info-notes').innerText = b.bank_notes;
+            } else {
+              notesRow.classList.add('hidden');
+            }
+
+            contentEl.classList.remove('hidden');
+          } else {
+            fallbackEl.classList.remove('hidden');
+          }
+        } catch (err) {
+          loadingEl.classList.add('hidden');
+          fallbackEl.classList.remove('hidden');
         }
 
       } else if (chosenMethod === 'Payment via Admin Call') {

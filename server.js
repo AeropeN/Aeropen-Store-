@@ -174,7 +174,7 @@ async function initDatabase() {
     try { await db.execute('ALTER TABLE orders ADD COLUMN cancellation_reason TEXT'); } catch (e) {}
     try { await db.execute('ALTER TABLE orders ADD COLUMN is_logistics_enabled INTEGER DEFAULT 1'); } catch (e) {}
 
-    // Payment method column (e.g., 'Payment QR' or 'Payment via Admin Call')
+    // Payment method column (e.g., 'Payment QR', 'Payment via Bank Transfer', or 'Payment via Admin Call')
     try { await db.execute('ALTER TABLE orders ADD COLUMN payment_method TEXT DEFAULT "Pending"'); } catch (e) {}
 
     // Add Duty Taxes, Courier Charges, and Round Off columns to orders table
@@ -197,13 +197,25 @@ async function initDatabase() {
         enable_round_off INTEGER DEFAULT 1,
         default_courier_charges REAL,
         qr_code_url TEXT,
+        bank_name TEXT,
+        account_number TEXT,
+        ifsc_code TEXT,
+        account_holder_name TEXT,
+        registered_mobile TEXT,
+        bank_notes TEXT,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
       )
     `);
 
-    // Safely add enable_round_off & qr_code_url if table already existed without them
+    // Safely add enable_round_off, qr_code_url & bank details if table already existed without them
     try { await db.execute('ALTER TABLE duty_tax_settings ADD COLUMN enable_round_off INTEGER DEFAULT 1'); } catch (e) {}
     try { await db.execute('ALTER TABLE duty_tax_settings ADD COLUMN qr_code_url TEXT'); } catch (e) {}
+    try { await db.execute('ALTER TABLE duty_tax_settings ADD COLUMN bank_name TEXT'); } catch (e) {}
+    try { await db.execute('ALTER TABLE duty_tax_settings ADD COLUMN account_number TEXT'); } catch (e) {}
+    try { await db.execute('ALTER TABLE duty_tax_settings ADD COLUMN ifsc_code TEXT'); } catch (e) {}
+    try { await db.execute('ALTER TABLE duty_tax_settings ADD COLUMN account_holder_name TEXT'); } catch (e) {}
+    try { await db.execute('ALTER TABLE duty_tax_settings ADD COLUMN registered_mobile TEXT'); } catch (e) {}
+    try { await db.execute('ALTER TABLE duty_tax_settings ADD COLUMN bank_notes TEXT'); } catch (e) {}
 
     // Seed default settings row (id = 1) if not exists
     const settingsCheck = await db.execute('SELECT COUNT(*) as count FROM duty_tax_settings WHERE id = 1');
@@ -329,13 +341,31 @@ async function getDutyTaxSettings() {
         sgst_rate: Number(row.sgst_rate) >= 0 ? Number(row.sgst_rate) : 9.0,
         enable_round_off: row.enable_round_off !== undefined && row.enable_round_off !== null ? Number(row.enable_round_off) : 1,
         default_courier_charges: row.default_courier_charges !== null && row.default_courier_charges !== '' ? Number(row.default_courier_charges) : null,
-        qr_code_url: row.qr_code_url || null
+        qr_code_url: row.qr_code_url || null,
+        bank_name: row.bank_name || null,
+        account_number: row.account_number || null,
+        ifsc_code: row.ifsc_code || null,
+        account_holder_name: row.account_holder_name || null,
+        registered_mobile: row.registered_mobile || null,
+        bank_notes: row.bank_notes || null
       };
     }
   } catch (e) {
     console.error('Error loading tax settings:', e);
   }
-  return { cgst_rate: 9.0, sgst_rate: 9.0, enable_round_off: 1, default_courier_charges: null, qr_code_url: null };
+  return {
+    cgst_rate: 9.0,
+    sgst_rate: 9.0,
+    enable_round_off: 1,
+    default_courier_charges: null,
+    qr_code_url: null,
+    bank_name: null,
+    account_number: null,
+    ifsc_code: null,
+    account_holder_name: null,
+    registered_mobile: null,
+    bank_notes: null
+  };
 }
 
 // ---------------- API ROUTES ----------------
@@ -546,7 +576,97 @@ app.delete('/api/admin/payment-qr', authenticateAdmin, async (req, res) => {
   }
 });
 
-// Customer route to set Payment Method right after placing order ('Payment QR' or 'Payment via Admin Call')
+// --- Bank Details Management Routes (Payment via Bank Transfer) ---
+
+// Public route to fetch active Bank Details for customer checkout
+app.get('/api/bank-details', async (req, res) => {
+  try {
+    const settings = await getDutyTaxSettings();
+    res.json({
+      success: true,
+      bank_details: {
+        bank_name: settings.bank_name || '',
+        account_number: settings.account_number || '',
+        ifsc_code: settings.ifsc_code || '',
+        account_holder_name: settings.account_holder_name || '',
+        registered_mobile: settings.registered_mobile || '',
+        bank_notes: settings.bank_notes || ''
+      }
+    });
+  } catch (err) {
+    console.error('Error fetching bank details:', err);
+    res.status(500).json({ error: 'Failed to fetch bank details.' });
+  }
+});
+
+// Admin save/update Bank Details
+app.post('/api/admin/bank-details', authenticateAdmin, async (req, res) => {
+  try {
+    const {
+      bank_name,
+      account_number,
+      ifsc_code,
+      account_holder_name,
+      registered_mobile,
+      bank_notes
+    } = req.body;
+
+    await db.execute({
+      sql: `UPDATE duty_tax_settings 
+            SET bank_name = ?,
+                account_number = ?,
+                ifsc_code = ?,
+                account_holder_name = ?,
+                registered_mobile = ?,
+                bank_notes = ?,
+                updated_at = CURRENT_TIMESTAMP
+            WHERE id = 1`,
+      args: [
+        bank_name ? String(bank_name).trim() : null,
+        account_number ? String(account_number).trim() : null,
+        ifsc_code ? String(ifsc_code).trim() : null,
+        account_holder_name ? String(account_holder_name).trim() : null,
+        registered_mobile ? String(registered_mobile).trim() : null,
+        bank_notes ? String(bank_notes).trim() : null
+      ]
+    });
+
+    res.json({
+      success: true,
+      message: 'Bank transfer details saved successfully!'
+    });
+  } catch (err) {
+    console.error('Error saving bank details:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Admin delete/clear Bank Details
+app.delete('/api/admin/bank-details', authenticateAdmin, async (req, res) => {
+  try {
+    await db.execute({
+      sql: `UPDATE duty_tax_settings 
+            SET bank_name = NULL,
+                account_number = NULL,
+                ifsc_code = NULL,
+                account_holder_name = NULL,
+                registered_mobile = NULL,
+                bank_notes = NULL,
+                updated_at = CURRENT_TIMESTAMP
+            WHERE id = 1`
+    });
+
+    res.json({
+      success: true,
+      message: 'Bank transfer details removed successfully.'
+    });
+  } catch (err) {
+    console.error('Error deleting bank details:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Customer route to set Payment Method right after placing order ('Payment QR', 'Payment via Bank Transfer', or 'Payment via Admin Call')
 app.patch('/api/orders/:id/payment-method', async (req, res) => {
   try {
     const rawId = req.params.id;
@@ -567,15 +687,28 @@ app.patch('/api/orders/:id/payment-method', async (req, res) => {
     }
 
     const cleanMethod = String(payment_method).trim();
-    const isAdminCall = cleanMethod.toLowerCase().includes('call');
+    const methodLower = cleanMethod.toLowerCase();
 
-    let updatedScan = isAdminCall
-      ? 'Payment via Admin Call requested. Customer support executive will contact shortly.'
-      : 'Payment initiated via official QR code. Verification pending.';
+    const isAdminCall = methodLower.includes('call');
+    const isBankTransfer = methodLower.includes('bank');
 
-    let paymentTerms = isAdminCall
-      ? 'Payment via Admin Call'
-      : 'UPI / QR Code Transfer';
+    let updatedScan = '';
+    let paymentTerms = '';
+    let respMessage = '';
+
+    if (isAdminCall) {
+      updatedScan = 'Payment via Admin Call requested. Customer support executive will contact shortly.';
+      paymentTerms = 'Payment via Admin Call';
+      respMessage = 'Admin call requested successfully.';
+    } else if (isBankTransfer) {
+      updatedScan = 'Payment initiated via direct Bank Transfer (NEFT / IMPS / RTGS). Transfer verification pending.';
+      paymentTerms = 'Direct Bank Transfer (NEFT/IMPS)';
+      respMessage = 'Payment via Bank Transfer selected.';
+    } else {
+      updatedScan = 'Payment initiated via official QR code. Verification pending.';
+      paymentTerms = 'UPI / QR Code Transfer';
+      respMessage = 'Payment QR selected.';
+    }
 
     await db.execute({
       sql: `UPDATE orders 
@@ -591,7 +724,7 @@ app.patch('/api/orders/:id/payment-method', async (req, res) => {
       success: true,
       orderId,
       payment_method: cleanMethod,
-      message: isAdminCall ? 'Admin call requested successfully.' : 'Payment QR selected.'
+      message: respMessage
     });
   } catch (err) {
     console.error('Payment method selection error:', err);

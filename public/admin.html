@@ -291,10 +291,10 @@
         </div>
       </section>
 
-      <!-- TAB 4: UPLOAD PENS & PAYMENT QR / ADMIN CALL DESK -->
+      <!-- TAB 4: UPLOAD PENS, BANK DETAILS & PAYMENT QR DESK -->
       <section id="tab-products" class="hidden space-y-8">
         
-        <!-- NEW ROW: STOREFRONT PAYMENT QR CODE & ADMIN CALL CENTER -->
+        <!-- ROW 1: STOREFRONT PAYMENT QR CODE & ADMIN CALL CENTER -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
           
           <!-- Box 1: Storefront Payment QR Code Uploader & Deleter -->
@@ -379,7 +379,114 @@
 
         </div>
 
-        <!-- ROW 2: PENS & INVENTORY FORM -->
+        <!-- NEW ROW: BANK TRANSFER DETAILS DESK (ADMIN BANK DETAILS UPLOADER & DELETER) -->
+        <div class="bg-brandCard border border-blue-500/30 p-6 rounded-2xl shadow-xl">
+          <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 pb-4 mb-4 border-b border-white/10">
+            <div>
+              <span class="text-blue-400 text-[11px] font-bold uppercase tracking-widest block">Customer Bank Transfer Payment</span>
+              <h3 class="font-serif text-2xl text-white mt-0.5">Official Bank Account Details</h3>
+              <p class="text-xs text-slate-400 mt-1">Configure your official company bank account details. These will be displayed to customers when they choose <strong>"Payment via Bank Transfer"</strong> at checkout.</p>
+            </div>
+            <div class="flex items-center gap-2">
+              <button type="button" onclick="loadAdminBankDetails()" class="px-3 py-1.5 bg-white/5 hover:bg-white/10 rounded-lg text-xs uppercase tracking-wider text-slate-300 transition">
+                <i class="fa-solid fa-rotate-right mr-1"></i> Refresh
+              </button>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Form to Enter/Update Bank Details (2 cols) -->
+            <form id="admin-bank-form" onsubmit="saveAdminBankDetails(event)" class="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+              <div>
+                <label class="block text-slate-300 font-semibold mb-1">Bank Name *</label>
+                <input type="text" id="admin-bank-name" required placeholder="e.g. State Bank of India, HDFC Bank" class="w-full bg-black/50 border border-white/10 rounded-lg p-3 text-white focus:border-brandGold outline-none">
+              </div>
+
+              <div>
+                <label class="block text-slate-300 font-semibold mb-1">Account Holder Name *</label>
+                <input type="text" id="admin-bank-holder" required placeholder="e.g. Aeropen Instruments Pvt Ltd" class="w-full bg-black/50 border border-white/10 rounded-lg p-3 text-white focus:border-brandGold outline-none">
+              </div>
+
+              <div>
+                <label class="block text-slate-300 font-semibold mb-1">Account Number *</label>
+                <input type="text" id="admin-bank-acc" required placeholder="e.g. 98765432101234" class="w-full bg-black/50 border border-white/10 rounded-lg p-3 text-white font-mono focus:border-brandGold outline-none">
+              </div>
+
+              <div>
+                <label class="block text-slate-300 font-semibold mb-1">IFSC Code *</label>
+                <input type="text" id="admin-bank-ifsc" required placeholder="e.g. SBIN0001234" class="w-full bg-black/50 border border-white/10 rounded-lg p-3 text-white font-mono uppercase focus:border-brandGold outline-none">
+              </div>
+
+              <div>
+                <label class="block text-slate-300 font-semibold mb-1">Registered Mobile / UPI Number</label>
+                <input type="text" id="admin-bank-mobile" placeholder="e.g. +91 7085257963" class="w-full bg-black/50 border border-white/10 rounded-lg p-3 text-white font-mono focus:border-brandGold outline-none">
+              </div>
+
+              <div>
+                <label class="block text-slate-300 font-semibold mb-1">Transfer Notes / Special Instructions</label>
+                <input type="text" id="admin-bank-notes" placeholder="e.g. Mention order ID in transfer remarks" class="w-full bg-black/50 border border-white/10 rounded-lg p-3 text-white focus:border-brandGold outline-none">
+              </div>
+
+              <div class="sm:col-span-2 pt-2 flex flex-wrap items-center gap-3">
+                <button type="submit" id="btn-save-bank" class="px-6 py-2.5 rounded-lg bg-brandGold text-black font-semibold uppercase text-xs tracking-wider hover:bg-yellow-500 transition shadow flex items-center gap-2">
+                  <i class="fa-solid fa-floppy-disk"></i> Upload & Save Bank Details
+                </button>
+                <button type="button" onclick="deleteAdminBankDetails()" id="btn-del-bank" class="px-5 py-2.5 rounded-lg bg-red-600/20 hover:bg-red-600 text-red-300 hover:text-white border border-red-500/30 text-xs font-semibold uppercase tracking-wider transition flex items-center gap-1.5">
+                  <i class="fa-regular fa-trash-can"></i> Delete Bank Details
+                </button>
+              </div>
+            </form>
+
+            <!-- Live Preview Box (1 col) -->
+            <div class="bg-black/40 border border-white/10 p-4 rounded-xl flex flex-col justify-between text-xs">
+              <div>
+                <div class="flex justify-between items-center pb-2 mb-2 border-b border-white/5">
+                  <span class="text-slate-400 font-semibold uppercase tracking-wider text-[10px]">Storefront Live Preview</span>
+                  <span id="admin-bank-preview-badge" class="px-2 py-0.5 rounded text-[10px] font-bold bg-white/5 text-slate-400 border border-white/10">Unconfigured</span>
+                </div>
+
+                <div id="admin-bank-preview-content" class="space-y-2 text-slate-300 hidden">
+                  <div>
+                    <span class="text-slate-500 text-[10px] block">Bank:</span>
+                    <span id="prev-bank-name" class="font-bold text-white"></span>
+                  </div>
+                  <div>
+                    <span class="text-slate-500 text-[10px] block">A/C Holder:</span>
+                    <span id="prev-bank-holder" class="font-semibold text-white"></span>
+                  </div>
+                  <div>
+                    <span class="text-slate-500 text-[10px] block">A/C Number:</span>
+                    <span id="prev-bank-acc" class="font-mono font-bold text-brandGold"></span>
+                  </div>
+                  <div>
+                    <span class="text-slate-500 text-[10px] block">IFSC Code:</span>
+                    <span id="prev-bank-ifsc" class="font-mono font-semibold text-white"></span>
+                  </div>
+                  <div id="prev-bank-mobile-row">
+                    <span class="text-slate-500 text-[10px] block">Mobile:</span>
+                    <span id="prev-bank-mobile" class="font-mono text-slate-200"></span>
+                  </div>
+                  <div id="prev-bank-notes-row">
+                    <span class="text-slate-500 text-[10px] block">Instructions:</span>
+                    <span id="prev-bank-notes" class="text-slate-300 italic text-[11px]"></span>
+                  </div>
+                </div>
+
+                <div id="admin-bank-preview-empty" class="py-10 text-center text-slate-500">
+                  <i class="fa-solid fa-building-columns text-3xl mb-2 text-slate-600 block"></i>
+                  <p class="font-medium text-xs">No bank details active</p>
+                  <p class="text-[10px] text-slate-500 mt-0.5">Fill out and click upload to display bank transfer details to customers.</p>
+                </div>
+              </div>
+
+              <p class="text-[10px] text-slate-500 pt-2 border-t border-white/5 italic">
+                Visible when customer clicks "Payment via Bank Transfer".
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- ROW 3: PENS & INVENTORY FORM -->
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div class="bg-brandCard border border-white/10 p-6 rounded-2xl shadow-xl">
             <h3 class="font-serif text-2xl text-white mb-4">Add New Pen</h3>
@@ -949,10 +1056,11 @@
           </div>
 
           <!-- Payment Presets -->
-          <div class="grid grid-cols-4 gap-2">
-            <button type="button" onclick="selectPaymentPreset('Standard Direct', this)" class="payment-btn py-1.5 rounded-md bg-[#1d2537] hover:bg-[#28334b] border border-slate-700 text-slate-200 font-medium text-center truncate">Direct</button>
+          <div class="grid grid-cols-2 sm:grid-cols-5 gap-2">
             <button type="button" onclick="selectPaymentPreset('Prepaid (UPI / Card / NetBanking)', this)" class="payment-btn py-1.5 rounded-md bg-brandGold text-black font-semibold border border-brandGold text-center truncate">Prepaid</button>
+            <button type="button" onclick="selectPaymentPreset('Direct Bank Transfer (NEFT/IMPS)', this)" class="payment-btn py-1.5 rounded-md bg-[#1d2537] hover:bg-[#28334b] border border-slate-700 text-slate-200 font-medium text-center truncate">Bank Transfer</button>
             <button type="button" onclick="selectPaymentPreset('Payment via Admin Call', this)" class="payment-btn py-1.5 rounded-md bg-[#1d2537] hover:bg-[#28334b] border border-slate-700 text-slate-200 font-medium text-center truncate">Admin Call</button>
+            <button type="button" onclick="selectPaymentPreset('Standard Direct', this)" class="payment-btn py-1.5 rounded-md bg-[#1d2537] hover:bg-[#28334b] border border-slate-700 text-slate-200 font-medium text-center truncate">Direct</button>
             <button type="button" onclick="selectPaymentPreset('Cash on Delivery (COD)', this)" class="payment-btn py-1.5 rounded-md bg-[#1d2537] hover:bg-[#28334b] border border-slate-700 text-slate-200 font-medium text-center truncate">COD</button>
           </div>
 
@@ -1110,6 +1218,7 @@
         loadInquiries();
         loadAdminPens();
         loadPaymentQR();
+        loadAdminBankDetails();
       } else {
         document.getElementById('login-section').classList.remove('hidden');
         document.getElementById('dashboard-section').classList.add('hidden');
@@ -1163,6 +1272,7 @@
       } else if (tab === 'products') {
         loadPaymentQR();
         renderAdminCallDesk();
+        loadAdminBankDetails();
       }
     }
 
@@ -1254,6 +1364,143 @@
         alert('Server communication error.');
       } finally {
         btn.innerHTML = `<i class="fa-regular fa-trash-can"></i> Delete QR`;
+        btn.disabled = false;
+      }
+    }
+
+    /* -------------------------------------------------------------
+       BANK TRANSFER DETAILS DESK (ADMIN BANK UPLOADER & DELETER)
+    ---------------------------------------------------------------- */
+    async function loadAdminBankDetails() {
+      try {
+        const res = await fetch('/api/bank-details');
+        const data = await res.json();
+        const badge = document.getElementById('admin-bank-preview-badge');
+        const content = document.getElementById('admin-bank-preview-content');
+        const empty = document.getElementById('admin-bank-preview-empty');
+
+        if (data && data.success && data.bank_details && (data.bank_details.bank_name || data.bank_details.account_number)) {
+          const b = data.bank_details;
+
+          // Populate Form
+          document.getElementById('admin-bank-name').value = b.bank_name || '';
+          document.getElementById('admin-bank-holder').value = b.account_holder_name || '';
+          document.getElementById('admin-bank-acc').value = b.account_number || '';
+          document.getElementById('admin-bank-ifsc').value = b.ifsc_code || '';
+          document.getElementById('admin-bank-mobile').value = b.registered_mobile || '';
+          document.getElementById('admin-bank-notes').value = b.bank_notes || '';
+
+          // Populate Preview
+          document.getElementById('prev-bank-name').innerText = b.bank_name || '—';
+          document.getElementById('prev-bank-holder').innerText = b.account_holder_name || '—';
+          document.getElementById('prev-bank-acc').innerText = b.account_number || '—';
+          document.getElementById('prev-bank-ifsc').innerText = b.ifsc_code || '—';
+
+          const mobRow = document.getElementById('prev-bank-mobile-row');
+          if (b.registered_mobile) {
+            mobRow.classList.remove('hidden');
+            document.getElementById('prev-bank-mobile').innerText = b.registered_mobile;
+          } else {
+            mobRow.classList.add('hidden');
+          }
+
+          const notesRow = document.getElementById('prev-bank-notes-row');
+          if (b.bank_notes) {
+            notesRow.classList.remove('hidden');
+            document.getElementById('prev-bank-notes').innerText = b.bank_notes;
+          } else {
+            notesRow.classList.add('hidden');
+          }
+
+          badge.innerText = 'Active on Checkout';
+          badge.className = 'px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/40';
+
+          content.classList.remove('hidden');
+          empty.classList.add('hidden');
+        } else {
+          document.getElementById('admin-bank-name').value = '';
+          document.getElementById('admin-bank-holder').value = '';
+          document.getElementById('admin-bank-acc').value = '';
+          document.getElementById('admin-bank-ifsc').value = '';
+          document.getElementById('admin-bank-mobile').value = '';
+          document.getElementById('admin-bank-notes').value = '';
+
+          badge.innerText = 'Unconfigured';
+          badge.className = 'px-2 py-0.5 rounded text-[10px] font-bold bg-white/5 text-slate-400 border border-white/10';
+
+          content.classList.add('hidden');
+          empty.classList.remove('hidden');
+        }
+      } catch (err) {
+        console.error('Error loading bank details:', err);
+      }
+    }
+
+    async function saveAdminBankDetails(e) {
+      e.preventDefault();
+      const btn = document.getElementById('btn-save-bank');
+      btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Uploading...`;
+      btn.disabled = true;
+
+      const payload = {
+        bank_name: document.getElementById('admin-bank-name').value.trim(),
+        account_holder_name: document.getElementById('admin-bank-holder').value.trim(),
+        account_number: document.getElementById('admin-bank-acc').value.trim(),
+        ifsc_code: document.getElementById('admin-bank-ifsc').value.trim(),
+        registered_mobile: document.getElementById('admin-bank-mobile').value.trim(),
+        bank_notes: document.getElementById('admin-bank-notes').value.trim()
+      };
+
+      try {
+        const res = await fetch('/api/admin/bank-details', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${sessionStorage.getItem(API_TOKEN_KEY)}`
+          },
+          body: JSON.stringify(payload)
+        });
+
+        const data = await res.json();
+        if (res.ok) {
+          alert('Bank transfer details uploaded and saved successfully!');
+          loadAdminBankDetails();
+        } else {
+          alert(data.error || 'Failed to save bank details.');
+        }
+      } catch (err) {
+        alert('Server communication error.');
+      } finally {
+        btn.innerHTML = `<i class="fa-solid fa-floppy-disk"></i> Upload & Save Bank Details`;
+        btn.disabled = false;
+      }
+    }
+
+    async function deleteAdminBankDetails() {
+      if (!confirm('Are you sure you want to delete and clear the official bank transfer details?')) return;
+      const btn = document.getElementById('btn-del-bank');
+      btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i>`;
+      btn.disabled = true;
+
+      try {
+        const res = await fetch('/api/admin/bank-details', {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${sessionStorage.getItem(API_TOKEN_KEY)}`
+          }
+        });
+
+        const data = await res.json();
+        if (res.ok) {
+          alert('Bank transfer details deleted successfully.');
+          loadAdminBankDetails();
+        } else {
+          alert(data.error || 'Failed to delete bank details.');
+        }
+      } catch (err) {
+        alert('Server communication error.');
+      } finally {
+        btn.innerHTML = `<i class="fa-regular fa-trash-can"></i> Delete Bank Details`;
         btn.disabled = false;
       }
     }
@@ -1420,7 +1667,7 @@
               <div class="text-slate-200 font-semibold font-mono mt-1">Subtotal: ₹${subtotal.toFixed(2)}</div>
             </td>
             <td class="p-4 align-top font-mono">
-              <div class="text-slate-300">SGST (${sgstRate}%): <span class="text-white">₹${sgstAmt.toFixed(2)}</span></div>
+              <div class="text-slate-300 SGST (${sgstRate}%): <span class="text-white">₹${sgstAmt.toFixed(2)}</span></div>
               <div class="text-slate-300 mt-0.5">CGST (${cgstRate}%): <span class="text-white">₹${cgstAmt.toFixed(2)}</span></div>
             </td>
             <td class="p-4 align-top">
@@ -1703,6 +1950,7 @@
           const paymentTerm = o.payment_terms || 'Prepaid';
           const paymentMethod = o.payment_method || 'Pending';
           const isAdminCallRequested = paymentMethod.toLowerCase().includes('call') || paymentTerm.toLowerCase().includes('call');
+          const isBankTransfer = paymentMethod.toLowerCase().includes('bank') || paymentTerm.toLowerCase().includes('bank');
           const logisticsActive = o.is_logistics_enabled !== 0;
 
           const unitPrice = Number(o.unit_price) || 0;
@@ -1723,7 +1971,7 @@
               <div class="text-xs text-brandGold"><i class="fa-solid fa-phone text-[10px] mr-1"></i>${o.phone}</div>
               <div class="text-xs text-slate-400">${o.email || 'No email provided'}</div>
 
-              <!-- High-Visibility Payment via Admin Call Alert Badge -->
+              <!-- Payment Method Badges -->
               ${isAdminCallRequested ? `
                 <div class="mt-2 p-2 rounded-lg bg-amber-500/15 border border-amber-500/40 text-amber-300 text-xs font-semibold flex items-center justify-between gap-2 shadow">
                   <span class="flex items-center gap-1.5 text-[11px]">
@@ -1732,6 +1980,11 @@
                   <a href="tel:${o.phone}" class="px-2 py-0.5 rounded bg-amber-500 text-black font-bold text-[10px] hover:bg-yellow-400 uppercase tracking-wider flex items-center gap-1 shadow">
                     <i class="fa-solid fa-phone"></i> Call Now
                   </a>
+                </div>
+              ` : isBankTransfer ? `
+                <div class="mt-1.5 p-1.5 rounded bg-blue-500/15 border border-blue-500/40 text-blue-300 text-xs font-medium flex items-center gap-1.5">
+                  <i class="fa-solid fa-building-columns text-blue-400 text-[10px]"></i>
+                  <span>Bank Transfer Selected</span>
                 </div>
               ` : `
                 <div class="mt-1 text-[11px] text-slate-400 flex items-center gap-1">
@@ -1892,6 +2145,7 @@
       const isCod = paymentTerm.toLowerCase().includes('cod') || paymentTerm.toLowerCase().includes('cash');
       const isDirect = paymentTerm.toLowerCase().includes('direct');
       const isCall = paymentMethod.toLowerCase().includes('call') || paymentTerm.toLowerCase().includes('call');
+      const isBank = paymentMethod.toLowerCase().includes('bank') || paymentTerm.toLowerCase().includes('bank');
       const badge = document.getElementById('inv-box-payment-badge');
       const billingStatus = document.getElementById('inv-box-billing-status');
 
@@ -1899,6 +2153,10 @@
         badge.innerText = 'Admin Call Required';
         badge.className = 'inline-block px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-300';
         billingStatus.innerText = 'Pending Phone Call';
+      } else if (isBank) {
+        badge.innerText = 'Direct Bank Transfer';
+        badge.className = 'inline-block px-2 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-800 border border-blue-300';
+        billingStatus.innerText = 'Awaiting Transfer Verification';
       } else if (isCod) {
         badge.innerText = 'COD / Post-Paid';
         badge.className = 'inline-block px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-300';
@@ -2257,13 +2515,18 @@
       const paymentTerm = order.payment_terms || 'Prepaid (UPI / Card / NetBanking)';
       document.getElementById('modal-payment-terms').value = paymentTerm;
       document.querySelectorAll('.payment-btn').forEach(btn => {
-        if (btn.innerText.trim() === 'Prepaid' && paymentTerm.toLowerCase().includes('prepaid')) {
+        const text = btn.innerText.trim().toLowerCase();
+        const currentLower = paymentTerm.toLowerCase();
+
+        if (text === 'prepaid' && currentLower.includes('prepaid')) {
           btn.className = 'payment-btn py-1.5 rounded-md bg-brandGold text-black font-semibold border border-brandGold text-center truncate';
-        } else if (btn.innerText.trim() === 'Admin Call' && paymentTerm.toLowerCase().includes('call')) {
+        } else if (text === 'bank transfer' && currentLower.includes('bank')) {
           btn.className = 'payment-btn py-1.5 rounded-md bg-brandGold text-black font-semibold border border-brandGold text-center truncate';
-        } else if (btn.innerText.trim() === 'COD' && paymentTerm.toLowerCase().includes('cod')) {
+        } else if (text === 'admin call' && currentLower.includes('call')) {
           btn.className = 'payment-btn py-1.5 rounded-md bg-brandGold text-black font-semibold border border-brandGold text-center truncate';
-        } else if (btn.innerText.trim() === 'Direct' && paymentTerm.toLowerCase().includes('direct')) {
+        } else if (text === 'cod' && currentLower.includes('cod')) {
+          btn.className = 'payment-btn py-1.5 rounded-md bg-brandGold text-black font-semibold border border-brandGold text-center truncate';
+        } else if (text === 'direct' && currentLower.includes('direct')) {
           btn.className = 'payment-btn py-1.5 rounded-md bg-brandGold text-black font-semibold border border-brandGold text-center truncate';
         } else {
           btn.className = 'payment-btn py-1.5 rounded-md bg-[#1d2537] hover:bg-[#28334b] border border-slate-700 text-slate-200 font-medium text-center truncate';
