@@ -144,7 +144,7 @@
         <span class="text-brandGold text-xs uppercase tracking-[0.25em]">Dispatch & Logistics</span>
         <h2 class="font-serif text-4xl md:text-5xl text-white mt-2">Track Your Aeropen</h2>
         <p class="text-brandMuted text-sm mt-3 font-light max-w-md mx-auto">
-          Enter your Order ID (e.g. <span class="text-brandGold">AERO-1001</span> or <span class="text-brandGold">1001</span>) to view real-time status and invoice details.
+          Enter your Order ID (e.g. <span class="text-brandGold">AERO-1</span> or <span class="text-brandGold">1</span>) to view real-time status and invoice details.
         </p>
       </div>
 
@@ -159,7 +159,7 @@
               type="text" 
               id="track-order-id" 
               required 
-              placeholder="e.g. AERO-1042" 
+              placeholder="e.g. AERO-1" 
               class="w-full bg-black/50 border border-white/10 rounded-xl pl-11 pr-4 py-3.5 text-white placeholder-slate-500 focus:border-brandGold outline-none transition uppercase tracking-wider text-sm font-medium">
           </div>
           <button 
@@ -204,7 +204,7 @@
     </div>
   </section>
 
-  <!-- Contact Us Section -->
+  <!-- Contact Us / Personal Concierge Section -->
   <section id="contact" class="py-24 px-6 max-w-5xl mx-auto no-print">
     <div class="text-center mb-16">
       <span class="text-brandGold text-xs uppercase tracking-[0.25em]">Personal Concierge</span>
@@ -216,13 +216,30 @@
         <div>
           <h3 class="font-serif text-2xl text-white mb-6">Direct Line & Office</h3>
           <div class="space-y-6 text-sm">
+            
+            <!-- Direct Line (WhatsApp) -->
+            <div class="flex items-start gap-4">
+              <div class="w-10 h-10 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-400">
+                <i class="fa-brands fa-whatsapp text-lg"></i>
+              </div>
+              <div>
+                <p class="text-slate-400 text-xs uppercase tracking-wider">Direct Line (WhatsApp)</p>
+                <a href="https://wa.me/917085257963" target="_blank" rel="noopener noreferrer" class="text-white text-base font-semibold hover:text-emerald-400 transition flex items-center gap-2 mt-0.5">
+                  <span>+91 7085257963</span>
+                  <span class="text-[10px] px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-normal flex items-center gap-1">
+                    <i class="fa-brands fa-whatsapp"></i> Chat Direct
+                  </span>
+                </a>
+              </div>
+            </div>
+
             <div class="flex items-start gap-4">
               <div class="w-10 h-10 rounded-full bg-brandGold/10 flex items-center justify-center text-brandGold">
                 <i class="fa-solid fa-phone"></i>
               </div>
               <div>
                 <p class="text-slate-400 text-xs uppercase tracking-wider">Customer Support Phone</p>
-                <a href="tel:+917085257963" class="text-white text-lg font-semibold hover:text-brandGold transition">
+                <a href="tel:+917085257963" class="text-white text-base font-semibold hover:text-brandGold transition">
                   +91 7085257963 / +91 9362341721
                 </a>
               </div>
@@ -362,13 +379,13 @@
             <span id="modal-calc-subtotal" class="text-white font-mono font-medium">₹0.00</span>
           </div>
 
-          <!-- SGST (9%) Line -->
+          <!-- SGST Line -->
           <div class="flex justify-between items-center text-slate-400">
             <span>SGST (<span id="modal-calc-sgst-rate">9</span>%)</span>
             <span id="modal-calc-sgst" class="text-slate-200 font-mono">₹0.00</span>
           </div>
 
-          <!-- CGST (9%) Line -->
+          <!-- CGST Line -->
           <div class="flex justify-between items-center text-slate-400">
             <span>CGST (<span id="modal-calc-cgst-rate">9</span>%)</span>
             <span id="modal-calc-cgst" class="text-slate-200 font-mono">₹0.00</span>
@@ -380,7 +397,7 @@
             <span id="modal-calc-courier" class="font-mono text-slate-400 italic"></span>
           </div>
 
-          <!-- Round Off Line (Rounds decimals/paisa to final integer) -->
+          <!-- Round Off Line -->
           <div class="flex justify-between items-center text-slate-400">
             <span>Round Off</span>
             <span id="modal-calc-round-off" class="font-mono text-slate-200">₹0.00</span>
@@ -609,7 +626,7 @@
       if (!val) return new Date();
       if (val instanceof Date) return val;
       if (typeof val === 'number') {
-        return new Date(val < 1e11 ? val * 1000 : val);
+        return new Date(val < 1e11 ? dateVal * 1000 : val);
       }
       let s = String(val).trim();
       if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(\.\d+)?$/.test(s)) {
@@ -644,7 +661,6 @@
         courierEl.classList.remove('text-slate-500', 'italic');
         courierEl.classList.add('text-white');
       } else {
-        // Field remains completely blank for customer as requested
         courierEl.innerText = '—';
         courierEl.classList.add('text-slate-500', 'italic');
         courierEl.classList.remove('text-white');
@@ -772,7 +788,6 @@
       const sgstRate = order.sgst_rate !== null && order.sgst_rate !== undefined ? Number(order.sgst_rate) : 9.0;
       const sgstAmount = order.sgst_amount !== null && order.sgst_amount !== undefined ? Number(order.sgst_amount) : Math.round(((subtotal * sgstRate) / 100) * 100) / 100;
 
-      // Courier charges: visible only if admin has added/assigned it; otherwise blank
       const hasCourier = order.courier_charges !== null && order.courier_charges !== undefined && order.courier_charges !== '';
       const courierAmount = hasCourier ? Number(order.courier_charges) : null;
 
@@ -909,7 +924,7 @@
             </div>
           `}
 
-          <!-- DUTY TAXES, COURIER & ROUND OFF BREAKDOWN CARD (Visible to Customer & on Print Page) -->
+          <!-- DUTY TAXES, COURIER & ROUND OFF BREAKDOWN CARD -->
           <div class="p-5 rounded-xl bg-black/40 border border-brandGold/30 space-y-3">
             <div class="flex justify-between items-center pb-2 border-b border-white/10">
               <span class="text-xs uppercase tracking-widest text-brandGold font-semibold">Duty Taxes & Courier Invoice Breakdown</span>
@@ -942,7 +957,7 @@
                 <span class="text-slate-200 font-mono">+ ₹${cgstAmount.toFixed(2)}</span>
               </div>
 
-              <!-- Courier Charges Line (blank for customer initially until admin adds it) -->
+              <!-- Courier Charges Line -->
               <div class="flex justify-between text-slate-400 items-center">
                 <span>Courier Charges</span>
                 <span class="font-mono ${hasCourier ? 'text-brandGold font-semibold' : 'text-slate-500 italic'}">
@@ -950,7 +965,7 @@
                 </span>
               </div>
 
-              <!-- Round Off Line (after Courier charges line) -->
+              <!-- Round Off Line -->
               <div class="flex justify-between text-slate-400 items-center">
                 <span>Round Off</span>
                 <span class="font-mono ${roundOff < 0 ? 'text-emerald-400' : 'text-slate-200'}">
@@ -1337,7 +1352,6 @@
       document.getElementById('cust-qty').value = 1;
       document.getElementById('cust-packaging').value = 'Pieces';
 
-      // Recompute price with SGST, CGST, courier and round off lines
       calculateModalPricing();
 
       const modal = document.getElementById('order-modal');
@@ -1382,8 +1396,9 @@
           body: JSON.stringify(orderData)
         });
         const result = await res.json();
-        if (res.ok) {
-          const formattedId = `AERO-${result.orderId}`;
+        if (res.ok && (result.orderId || result.order_reference)) {
+          const cleanOrderId = result.orderId || (result.order_reference ? result.order_reference.replace(/^#?AERO-?/i, '') : '');
+          const formattedId = result.order_reference || `AERO-${cleanOrderId}`;
           alert(`Order placed successfully!\nReference ID: #${formattedId}`);
           document.getElementById('order-form').reset();
           closeOrderModal();
@@ -1392,10 +1407,10 @@
           handleTrackOrder();
           document.getElementById('tracking').scrollIntoView({ behavior: 'smooth' });
         } else {
-          alert(result.error || 'Something went wrong.');
+          alert(result.error || 'Something went wrong while placing your order.');
         }
       } catch (err) {
-        alert('Server communication error.');
+        alert('Server communication error. Please check your connection.');
       } finally {
         btn.innerText = 'Confirm & Place Order';
         btn.disabled = false;

@@ -104,6 +104,26 @@ function calculateFinancials(unitPrice, quantity, cgstRate = 9, sgstRate = 9, co
   };
 }
 
+// Helper: Synchronize SQLite sequence table with actual orders count and max ID
+async function syncOrderSequence() {
+  try {
+    const check = await db.execute('SELECT COUNT(*) as total, MAX(id) as max_id FROM orders');
+    const total = Number(check.rows[0]?.total) || 0;
+    const maxId = Number(check.rows[0]?.max_id) || 0;
+
+    if (total === 0 || maxId === 0) {
+      await db.execute("DELETE FROM sqlite_sequence WHERE name = 'orders'");
+    } else {
+      await db.execute({
+        sql: "UPDATE sqlite_sequence SET seq = ? WHERE name = 'orders'",
+        args: [maxId]
+      });
+    }
+  } catch (err) {
+    // Table or sqlite_sequence might not be created yet during earliest boot
+  }
+}
+
 // Initialize database tables & columns
 async function initDatabase() {
   try {
@@ -195,6 +215,9 @@ async function initDatabase() {
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
       )
     `);
+
+    // Sync order sequence on boot
+    await syncOrderSequence();
 
     // Check if products exist; seed if empty
     const check = await db.execute('SELECT COUNT(*) as count FROM products');
@@ -569,7 +592,7 @@ app.delete('/api/orders/:id/charges/courier', authenticateAdmin, async (req, res
   }
 });
 
-// Orders: Create Order (Customer)
+// Orders: Create Order (Customer) - Robust Order ID Generation Fix
 app.post('/api/orders', async (req, res) => {
   try {
     const { customer_name, phone, email, address, city, pincode, product_id, product_title, quantity, packaging_type, packaging, order_notes, price } = req.body;
@@ -595,7 +618,6 @@ app.post('/api/orders', async (req, res) => {
 
     // Fetch default tax and round off settings
     const settings = await getDutyTaxSettings();
-    // Initially, before the admin adds it, courier charges field remains blank (null) for customer
     const initialCourierCharges = null;
 
     const financials = calculateFinancials(
@@ -607,6 +629,9 @@ app.post('/api/orders', async (req, res) => {
       Boolean(settings.enable_round_off)
     );
 
+    // Synchronize sqlite sequence before insertion to ensure accurate ID generation
+    await syncOrderSequence();
+
     const result = await db.execute({
       sql: `INSERT INTO orders (
               customer_name, phone, email, address, city, pincode,
@@ -615,14 +640,14 @@ app.post('/api/orders', async (req, res) => {
               sgst_rate, sgst_amount, courier_charges, round_off, total_amount
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       args: [
-        customer_name,
-        phone,
-        email || null,
-        address,
-        city,
-        pincode,
+        customer_name.trim(),
+        phone.trim(),
+        email ? email.trim() : null,
+        address.trim(),
+        city.trim(),
+        pincode.trim(),
         product_id || null,
-        product_title,
+        product_title.trim(),
         orderQty,
         resolvedPackaging,
         order_notes || '',
@@ -638,12 +663,31 @@ app.post('/api/orders', async (req, res) => {
       ]
     });
 
+    // Safely extract the generated Order ID
+    let orderId = null;
+    if (result && result.lastInsertRowid !== undefined && result.lastInsertRowid !== null) {
+      const parsed = Number(result.lastInsertRowid);
+      if (!isNaN(parsed) && parsed > 0) {
+        orderId = parsed;
+      }
+    }
+
+    // Fallback: Query newly created order directly if lastInsertRowid was not exposed by the driver
+    if (!orderId) {
+      const idQuery = await db.execute('SELECT id FROM orders ORDER BY id DESC LIMIT 1');
+      if (idQuery.rows && idQuery.rows.length > 0 && idQuery.rows[0].id) {
+        orderId = Number(idQuery.rows[0].id);
+      }
+    }
+
     res.json({
       success: true,
-      orderId: Number(result.lastInsertRowid),
+      orderId: orderId,
+      order_reference: `AERO-${orderId}`,
       financials
     });
   } catch (err) {
+    console.error('Order creation error:', err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -744,14 +788,14 @@ app.get('/api/orders/:id/track', async (req, res) => {
       edit_remaining_mins: editRemainingMins,
       cancel_remaining_mins: cancelRemainingMins,
 
-      // Financials breakdown (Round Off placed immediately after Courier charges)
+      // Financials breakdown
       unit_price: unitPrice,
       subtotal: subtotal,
       cgst_rate: cgstRate,
       cgst_amount: cgstAmount,
       sgst_rate: sgstRate,
       sgst_amount: sgstAmount,
-      courier_charges: courierCharges, // null when blank
+      courier_charges: courierCharges,
       round_off: roundOff,
       total_amount: totalAmount
     });
@@ -1109,12 +1153,27 @@ app.patch('/api/orders/:id/status', authenticateAdmin, async (req, res) => {
   }
 });
 
+// Admin Delete Order (With sequence resynchronization)
 app.delete('/api/orders/:id', authenticateAdmin, async (req, res) => {
   try {
+    const targetId = req.params.id;
+
+    if (targetId === 'all') {
+      await db.execute('DELETE FROM orders');
+      try {
+        await db.execute("DELETE FROM sqlite_sequence WHERE name = 'orders'");
+      } catch (e) {}
+      return res.json({ success: true, message: 'All orders deleted and sequence reset successfully.' });
+    }
+
     await db.execute({
       sql: 'DELETE FROM orders WHERE id = ?',
-      args: [req.params.id]
+      args: [targetId]
     });
+
+    // Resynchronize sequence so future orders do not skip or generate incorrectly
+    await syncOrderSequence();
+
     res.json({ success: true, message: 'Order deleted successfully.' });
   } catch (err) {
     res.status(500).json({ error: err.message });
