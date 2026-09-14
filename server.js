@@ -48,6 +48,9 @@ const productUpload = upload.fields([
   { name: 'penImage', maxCount: 1 }
 ]);
 
+// Single upload middleware for Admin Payment QR Code
+const qrUpload = upload.single('qrImage');
+
 // 3. Connect to Turso Cloud Database (strips 'Bearer ' if present)
 const rawToken = process.env.TURSO_AUTH_TOKEN || '';
 const cleanToken = rawToken.replace(/^Bearer\s+/i, '').trim();
@@ -171,6 +174,9 @@ async function initDatabase() {
     try { await db.execute('ALTER TABLE orders ADD COLUMN cancellation_reason TEXT'); } catch (e) {}
     try { await db.execute('ALTER TABLE orders ADD COLUMN is_logistics_enabled INTEGER DEFAULT 1'); } catch (e) {}
 
+    // Payment method column (e.g., 'Payment QR' or 'Payment via Admin Call')
+    try { await db.execute('ALTER TABLE orders ADD COLUMN payment_method TEXT DEFAULT "Pending"'); } catch (e) {}
+
     // Add Duty Taxes, Courier Charges, and Round Off columns to orders table
     try { await db.execute('ALTER TABLE orders ADD COLUMN unit_price REAL DEFAULT 0'); } catch (e) {}
     try { await db.execute('ALTER TABLE orders ADD COLUMN subtotal REAL DEFAULT 0'); } catch (e) {}
@@ -182,7 +188,7 @@ async function initDatabase() {
     try { await db.execute('ALTER TABLE orders ADD COLUMN round_off REAL DEFAULT 0'); } catch (e) {}
     try { await db.execute('ALTER TABLE orders ADD COLUMN total_amount REAL DEFAULT 0'); } catch (e) {}
 
-    // Global Duty, Taxes, Round Off & Courier Charges configuration table
+    // Global Duty, Taxes, Round Off, Courier Charges & Payment QR configuration table
     await db.execute(`
       CREATE TABLE IF NOT EXISTS duty_tax_settings (
         id INTEGER PRIMARY KEY,
@@ -190,18 +196,20 @@ async function initDatabase() {
         sgst_rate REAL DEFAULT 9.0,
         enable_round_off INTEGER DEFAULT 1,
         default_courier_charges REAL,
+        qr_code_url TEXT,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
       )
     `);
 
-    // Safely add enable_round_off if table already existed without it
+    // Safely add enable_round_off & qr_code_url if table already existed without them
     try { await db.execute('ALTER TABLE duty_tax_settings ADD COLUMN enable_round_off INTEGER DEFAULT 1'); } catch (e) {}
+    try { await db.execute('ALTER TABLE duty_tax_settings ADD COLUMN qr_code_url TEXT'); } catch (e) {}
 
     // Seed default settings row (id = 1) if not exists
     const settingsCheck = await db.execute('SELECT COUNT(*) as count FROM duty_tax_settings WHERE id = 1');
     if (Number(settingsCheck.rows[0].count) === 0) {
       await db.execute({
-        sql: `INSERT INTO duty_tax_settings (id, cgst_rate, sgst_rate, enable_round_off, default_courier_charges) VALUES (1, 9.0, 9.0, 1, NULL)`,
+        sql: `INSERT INTO duty_tax_settings (id, cgst_rate, sgst_rate, enable_round_off, default_courier_charges, qr_code_url) VALUES (1, 9.0, 9.0, 1, NULL, NULL)`,
         args: []
       });
     }
@@ -310,7 +318,7 @@ function isOrderDispatched(status) {
   return s.includes('dispatch') || s.includes('transit') || s.includes('shipped') || s.includes('out for delivery') || s.includes('delivered');
 }
 
-// Helper to fetch global duty, tax & round off settings
+// Helper to fetch global duty, tax, round off & payment QR settings
 async function getDutyTaxSettings() {
   try {
     const res = await db.execute('SELECT * FROM duty_tax_settings WHERE id = 1');
@@ -320,13 +328,14 @@ async function getDutyTaxSettings() {
         cgst_rate: Number(row.cgst_rate) >= 0 ? Number(row.cgst_rate) : 9.0,
         sgst_rate: Number(row.sgst_rate) >= 0 ? Number(row.sgst_rate) : 9.0,
         enable_round_off: row.enable_round_off !== undefined && row.enable_round_off !== null ? Number(row.enable_round_off) : 1,
-        default_courier_charges: row.default_courier_charges !== null && row.default_courier_charges !== '' ? Number(row.default_courier_charges) : null
+        default_courier_charges: row.default_courier_charges !== null && row.default_courier_charges !== '' ? Number(row.default_courier_charges) : null,
+        qr_code_url: row.qr_code_url || null
       };
     }
   } catch (e) {
     console.error('Error loading tax settings:', e);
   }
-  return { cgst_rate: 9.0, sgst_rate: 9.0, enable_round_off: 1, default_courier_charges: null };
+  return { cgst_rate: 9.0, sgst_rate: 9.0, enable_round_off: 1, default_courier_charges: null, qr_code_url: null };
 }
 
 // ---------------- API ROUTES ----------------
@@ -479,6 +488,117 @@ app.delete('/api/duty-taxes/courier', authenticateAdmin, async (req, res) => {
   }
 });
 
+// --- Payment QR Code Management Routes ---
+
+// Public route to fetch the active Admin Payment QR Code
+app.get('/api/payment-qr', async (req, res) => {
+  try {
+    const settings = await getDutyTaxSettings();
+    res.json({
+      success: true,
+      qr_code_url: settings.qr_code_url || null
+    });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch payment QR.' });
+  }
+});
+
+// Admin upload/update Payment QR code
+app.post('/api/admin/payment-qr', authenticateAdmin, qrUpload, async (req, res) => {
+  try {
+    let qrUrl = '';
+    if (req.file) {
+      qrUrl = req.file.path || req.file.secure_url || req.file.url;
+    } else if (req.body && req.body.qrUrlDirect) {
+      qrUrl = req.body.qrUrlDirect.trim();
+    }
+
+    if (!qrUrl) {
+      return res.status(400).json({ error: 'No QR code image uploaded.' });
+    }
+
+    await db.execute({
+      sql: `UPDATE duty_tax_settings SET qr_code_url = ?, updated_at = CURRENT_TIMESTAMP WHERE id = 1`,
+      args: [qrUrl]
+    });
+
+    res.json({
+      success: true,
+      message: 'Payment QR Code uploaded and active successfully!',
+      qr_code_url: qrUrl
+    });
+  } catch (err) {
+    console.error('Error uploading QR code:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Admin delete Payment QR Code
+app.delete('/api/admin/payment-qr', authenticateAdmin, async (req, res) => {
+  try {
+    await db.execute({
+      sql: `UPDATE duty_tax_settings SET qr_code_url = NULL, updated_at = CURRENT_TIMESTAMP WHERE id = 1`
+    });
+    res.json({ success: true, message: 'Payment QR Code removed successfully.' });
+  } catch (err) {
+    console.error('Error deleting QR code:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Customer route to set Payment Method right after placing order ('Payment QR' or 'Payment via Admin Call')
+app.patch('/api/orders/:id/payment-method', async (req, res) => {
+  try {
+    const rawId = req.params.id;
+    const orderId = rawId.replace(/^#?AERO-?/i, '').trim();
+    const { payment_method } = req.body;
+
+    if (!payment_method) {
+      return res.status(400).json({ error: 'Payment method is required.' });
+    }
+
+    const check = await db.execute({
+      sql: 'SELECT * FROM orders WHERE id = ?',
+      args: [orderId]
+    });
+
+    if (check.rows.length === 0) {
+      return res.status(404).json({ error: 'Order not found.' });
+    }
+
+    const cleanMethod = String(payment_method).trim();
+    const isAdminCall = cleanMethod.toLowerCase().includes('call');
+
+    let updatedScan = isAdminCall
+      ? 'Payment via Admin Call requested. Customer support executive will contact shortly.'
+      : 'Payment initiated via official QR code. Verification pending.';
+
+    let paymentTerms = isAdminCall
+      ? 'Payment via Admin Call'
+      : 'UPI / QR Code Transfer';
+
+    await db.execute({
+      sql: `UPDATE orders 
+            SET payment_method = ?,
+                payment_terms = ?,
+                latest_scan = ?,
+                updated_at = CURRENT_TIMESTAMP
+            WHERE id = ?`,
+      args: [cleanMethod, paymentTerms, updatedScan, orderId]
+    });
+
+    res.json({
+      success: true,
+      orderId,
+      payment_method: cleanMethod,
+      message: isAdminCall ? 'Admin call requested successfully.' : 'Payment QR selected.'
+    });
+  } catch (err) {
+    console.error('Payment method selection error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // Admin edit: Per-order Duty Taxes, Round Off & Courier Charges
 app.patch('/api/orders/:id/charges', authenticateAdmin, async (req, res) => {
   try {
@@ -595,7 +715,22 @@ app.delete('/api/orders/:id/charges/courier', authenticateAdmin, async (req, res
 // Orders: Create Order (Customer) - Robust Order ID Generation Fix
 app.post('/api/orders', async (req, res) => {
   try {
-    const { customer_name, phone, email, address, city, pincode, product_id, product_title, quantity, packaging_type, packaging, order_notes, price } = req.body;
+    const {
+      customer_name,
+      phone,
+      email,
+      address,
+      city,
+      pincode,
+      product_id,
+      product_title,
+      quantity,
+      packaging_type,
+      packaging,
+      order_notes,
+      price,
+      payment_method
+    } = req.body;
 
     if (!customer_name || !phone || !address || !pincode || !product_title) {
       return res.status(400).json({ error: 'Please provide all shipping and contact details.' });
@@ -603,6 +738,7 @@ app.post('/api/orders', async (req, res) => {
 
     const resolvedPackaging = (packaging_type || packaging || 'Pieces').toString().trim() || 'Pieces';
     const orderQty = Math.max(1, Number(quantity) || 1);
+    const resolvedPaymentMethod = (payment_method || 'Pending').toString().trim();
 
     // Retrieve pen unit price securely from DB or passed price
     let unitPrice = Number(price) || 0;
@@ -636,9 +772,9 @@ app.post('/api/orders', async (req, res) => {
       sql: `INSERT INTO orders (
               customer_name, phone, email, address, city, pincode,
               product_id, product_title, quantity, packaging_type, order_notes,
-              is_logistics_enabled, unit_price, subtotal, cgst_rate, cgst_amount,
+              is_logistics_enabled, payment_method, unit_price, subtotal, cgst_rate, cgst_amount,
               sgst_rate, sgst_amount, courier_charges, round_off, total_amount
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       args: [
         customer_name.trim(),
         phone.trim(),
@@ -651,6 +787,7 @@ app.post('/api/orders', async (req, res) => {
         orderQty,
         resolvedPackaging,
         order_notes || '',
+        resolvedPaymentMethod,
         financials.unitPrice,
         financials.subtotal,
         financials.cgstRate,
@@ -773,6 +910,7 @@ app.get('/api/orders/:id/track', async (req, res) => {
       quantity: quantity,
       packaging_type: order.packaging_type || 'Pieces',
       order_notes: order.order_notes || '',
+      payment_method: order.payment_method || 'Pending',
       status: statusKey,
       status_label: order.status || 'Pending Dispatch',
       courier_name: order.courier_name || '',
@@ -1079,6 +1217,7 @@ app.patch('/api/orders/:id/status', authenticateAdmin, async (req, res) => {
       estimated_delivery,
       latest_scan,
       payment_terms,
+      payment_method,
       quantity,
       packaging_type,
       packaging,
@@ -1115,6 +1254,7 @@ app.patch('/api/orders/:id/status', authenticateAdmin, async (req, res) => {
                 estimated_delivery = COALESCE(?, estimated_delivery),
                 latest_scan = COALESCE(?, latest_scan),
                 payment_terms = COALESCE(?, payment_terms),
+                payment_method = COALESCE(?, payment_method),
                 quantity = ?,
                 packaging_type = COALESCE(?, packaging_type),
                 is_logistics_enabled = COALESCE(?, is_logistics_enabled),
@@ -1133,6 +1273,7 @@ app.patch('/api/orders/:id/status', authenticateAdmin, async (req, res) => {
         estimated_delivery !== undefined ? estimated_delivery : null,
         latest_scan !== undefined ? latest_scan : null,
         payment_terms !== undefined ? payment_terms : null,
+        payment_method !== undefined ? payment_method : null,
         financials.quantity,
         resolvedPackaging !== null ? String(resolvedPackaging).trim() : null,
         is_logistics_enabled !== undefined ? (Number(is_logistics_enabled) ? 1 : 0) : null,

@@ -131,7 +131,7 @@
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
           <div>
             <h2 class="text-2xl font-serif text-white">Incoming Customer Orders</h2>
-            <p class="text-xs text-slate-400 mt-1">Review orders, inspect customer cancellation reasons, adjust carrier logistics, taxes & delivery details.</p>
+            <p class="text-xs text-slate-400 mt-1">Review orders, inspect customer payment choices ("Payment via Admin Call" alerts), logistics & address details.</p>
           </div>
           <button onclick="loadOrders()" class="px-4 py-2 bg-white/5 hover:bg-white/10 rounded-lg text-xs uppercase tracking-wider text-slate-300 self-start sm:self-auto">
             <i class="fa-solid fa-rotate-right mr-1"></i> Refresh
@@ -291,8 +291,95 @@
         </div>
       </section>
 
-      <!-- TAB 4: UPLOAD PENS -->
-      <section id="tab-products" class="hidden">
+      <!-- TAB 4: UPLOAD PENS & PAYMENT QR / ADMIN CALL DESK -->
+      <section id="tab-products" class="hidden space-y-8">
+        
+        <!-- NEW ROW: STOREFRONT PAYMENT QR CODE & ADMIN CALL CENTER -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          
+          <!-- Box 1: Storefront Payment QR Code Uploader & Deleter -->
+          <div class="bg-brandCard border border-brandGold/30 p-6 rounded-2xl shadow-xl">
+            <div class="flex justify-between items-start mb-4">
+              <div>
+                <span class="text-brandGold text-[11px] font-bold uppercase tracking-widest block">Customer Checkout Payment</span>
+                <h3 class="font-serif text-2xl text-white mt-0.5">Storefront Payment QR Code</h3>
+                <p class="text-xs text-slate-400 mt-1">Upload your official UPI / Bank QR code. It will be shown to customers when they click "Payment QR".</p>
+              </div>
+              <button type="button" onclick="loadPaymentQR()" class="text-slate-400 hover:text-white text-xs">
+                <i class="fa-solid fa-rotate-right"></i>
+              </button>
+            </div>
+
+            <div class="flex flex-col sm:flex-row items-center gap-6 p-4 rounded-xl bg-black/40 border border-white/10">
+              <!-- QR Preview Container -->
+              <div class="w-36 h-36 bg-white rounded-lg flex items-center justify-center overflow-hidden border border-slate-700 flex-shrink-0 shadow-inner">
+                <img id="admin-qr-preview" src="" alt="Payment QR Preview" class="w-full h-full object-contain hidden">
+                <div id="admin-qr-empty" class="text-center p-3 text-slate-500 text-xs">
+                  <i class="fa-solid fa-qrcode text-3xl mb-1 text-slate-400"></i>
+                  <p class="font-medium">No QR Code Uploaded</p>
+                </div>
+              </div>
+
+              <!-- Upload & Delete Actions -->
+              <div class="flex-1 w-full space-y-3 text-xs">
+                <form id="upload-qr-form" onsubmit="uploadPaymentQRCode(event)" class="space-y-3">
+                  <div>
+                    <label class="block text-slate-300 font-medium mb-1">Select QR Code Image (JPEG / PNG / WebP)</label>
+                    <input 
+                      type="file" 
+                      id="qr-file-input" 
+                      accept="image/*" 
+                      required
+                      class="w-full text-slate-400 text-xs file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-xs file:bg-white/10 file:text-white hover:file:bg-brandGold hover:file:text-black transition cursor-pointer">
+                  </div>
+
+                  <div class="flex items-center gap-2 pt-1">
+                    <button type="submit" id="btn-upload-qr" class="flex-1 py-2.5 rounded-lg bg-brandGold hover:bg-yellow-500 text-black font-semibold text-xs uppercase tracking-wider transition shadow flex items-center justify-center gap-1.5">
+                      <i class="fa-solid fa-cloud-arrow-up"></i> Upload QR Code
+                    </button>
+                    <button type="button" onclick="deletePaymentQRCode()" id="btn-del-qr" class="py-2.5 px-4 rounded-lg bg-red-600/20 hover:bg-red-600 text-red-300 hover:text-white border border-red-500/30 text-xs font-semibold uppercase tracking-wider transition flex items-center gap-1.5">
+                      <i class="fa-regular fa-trash-can"></i> Delete QR
+                    </button>
+                  </div>
+                </form>
+                <p id="qr-status-msg" class="text-[10px] text-slate-400 italic">QR code is served securely to paying customers upon checkout.</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Box 2: Live "Payment via Admin Call" Orders Desk -->
+          <div class="bg-brandCard border border-emerald-500/30 p-6 rounded-2xl shadow-xl flex flex-col justify-between">
+            <div>
+              <div class="flex justify-between items-start mb-4">
+                <div>
+                  <span class="text-emerald-400 text-[11px] font-bold uppercase tracking-widest block">Customer Callback Desk</span>
+                  <h3 class="font-serif text-2xl text-white mt-0.5">Admin Call Requests</h3>
+                  <p class="text-xs text-slate-400 mt-1">Customers who clicked <strong>"Payment via Admin Call"</strong>. Check details and call immediately.</p>
+                </div>
+                <button type="button" onclick="loadOrders()" class="text-slate-400 hover:text-white text-xs">
+                  <i class="fa-solid fa-rotate-right"></i>
+                </button>
+              </div>
+
+              <!-- List of orders requesting an admin call -->
+              <div id="admin-call-orders-list" class="space-y-2.5 max-h-52 overflow-y-auto pr-1">
+                <div class="p-4 rounded-xl bg-black/40 border border-white/5 text-center text-slate-400 text-xs">
+                  Loading callback requests...
+                </div>
+              </div>
+            </div>
+
+            <div class="pt-3 border-t border-white/5 flex items-center justify-between text-[11px] text-slate-400">
+              <span>Status updates can also be managed in the Orders Desk.</span>
+              <button onclick="switchTab('orders')" class="text-brandGold hover:underline font-semibold flex items-center gap-1">
+                View Full Orders <i class="fa-solid fa-arrow-right text-[10px]"></i>
+              </button>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- ROW 2: PENS & INVENTORY FORM -->
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div class="bg-brandCard border border-white/10 p-6 rounded-2xl shadow-xl">
             <h3 class="font-serif text-2xl text-white mb-4">Add New Pen</h3>
@@ -505,8 +592,8 @@
                 </div>
 
                 <div class="flex justify-between py-1 border-b border-slate-200">
-                  <span class="text-slate-600">Billing Category:</span>
-                  <span class="font-medium text-slate-800">Direct Order</span>
+                  <span class="text-slate-600">Payment Choice:</span>
+                  <span class="font-medium text-brandGold font-bold" id="inv-box-payment-choice">Pending</span>
                 </div>
 
                 <div class="flex justify-between py-1">
@@ -854,7 +941,7 @@
           <input type="text" id="modal-awb" placeholder="OPTIONAL (E.G. 1289472910 OR BLUEDART771 - LEAVE EMPTY IF UNASSIGNED)" class="w-full bg-[#1a2130] border border-slate-700 rounded-lg px-3 py-2.5 text-white font-mono uppercase focus:border-brandGold outline-none">
         </div>
 
-        <!-- 5. PAYMENT TERMS -->
+        <!-- 5. PAYMENT TERMS & METHOD -->
         <div class="space-y-1.5">
           <div class="flex items-center justify-between text-xs">
             <label class="font-bold text-slate-200">Payment Terms</label>
@@ -862,10 +949,11 @@
           </div>
 
           <!-- Payment Presets -->
-          <div class="grid grid-cols-3 gap-2">
-            <button type="button" onclick="selectPaymentPreset('Standard Direct', this)" class="payment-btn py-1.5 rounded-md bg-[#1d2537] hover:bg-[#28334b] border border-slate-700 text-slate-200 font-medium text-center">Standard Direct</button>
-            <button type="button" onclick="selectPaymentPreset('Prepaid (UPI / Card / NetBanking)', this)" class="payment-btn py-1.5 rounded-md bg-brandGold text-black font-semibold border border-brandGold text-center">Prepaid</button>
-            <button type="button" onclick="selectPaymentPreset('Cash on Delivery (COD)', this)" class="payment-btn py-1.5 rounded-md bg-[#1d2537] hover:bg-[#28334b] border border-slate-700 text-slate-200 font-medium text-center">COD</button>
+          <div class="grid grid-cols-4 gap-2">
+            <button type="button" onclick="selectPaymentPreset('Standard Direct', this)" class="payment-btn py-1.5 rounded-md bg-[#1d2537] hover:bg-[#28334b] border border-slate-700 text-slate-200 font-medium text-center truncate">Direct</button>
+            <button type="button" onclick="selectPaymentPreset('Prepaid (UPI / Card / NetBanking)', this)" class="payment-btn py-1.5 rounded-md bg-brandGold text-black font-semibold border border-brandGold text-center truncate">Prepaid</button>
+            <button type="button" onclick="selectPaymentPreset('Payment via Admin Call', this)" class="payment-btn py-1.5 rounded-md bg-[#1d2537] hover:bg-[#28334b] border border-slate-700 text-slate-200 font-medium text-center truncate">Admin Call</button>
+            <button type="button" onclick="selectPaymentPreset('Cash on Delivery (COD)', this)" class="payment-btn py-1.5 rounded-md bg-[#1d2537] hover:bg-[#28334b] border border-slate-700 text-slate-200 font-medium text-center truncate">COD</button>
           </div>
 
           <input type="text" id="modal-payment-terms" value="Prepaid (UPI / Card / NetBanking)" class="w-full bg-[#1a2130] border border-slate-700 rounded-lg px-3 py-2 text-white focus:border-brandGold outline-none">
@@ -1021,6 +1109,7 @@
         loadTaxSettings();
         loadInquiries();
         loadAdminPens();
+        loadPaymentQR();
       } else {
         document.getElementById('login-section').classList.remove('hidden');
         document.getElementById('dashboard-section').classList.add('hidden');
@@ -1071,7 +1160,148 @@
 
       if (tab === 'taxes') {
         loadTaxSettings();
+      } else if (tab === 'products') {
+        loadPaymentQR();
+        renderAdminCallDesk();
       }
+    }
+
+    /* -------------------------------------------------------------
+       PAYMENT QR CODE MANAGEMENT & ADMIN CALL BACK DESK
+    ---------------------------------------------------------------- */
+    async function loadPaymentQR() {
+      const preview = document.getElementById('admin-qr-preview');
+      const emptyBox = document.getElementById('admin-qr-empty');
+      const statusMsg = document.getElementById('qr-status-msg');
+
+      try {
+        const res = await fetch('/api/payment-qr');
+        const data = await res.json();
+        if (data && data.qr_code_url) {
+          preview.src = data.qr_code_url;
+          preview.classList.remove('hidden');
+          emptyBox.classList.add('hidden');
+          statusMsg.innerHTML = `<span class="text-emerald-400 font-semibold"><i class="fa-solid fa-circle-check"></i> Active on Storefront:</span> Customers can scan this QR code.`;
+        } else {
+          preview.src = '';
+          preview.classList.add('hidden');
+          emptyBox.classList.remove('hidden');
+          statusMsg.innerHTML = `<span class="text-amber-400 italic">No QR code active. Please upload one for customer checkouts.</span>`;
+        }
+      } catch (err) {
+        console.error('Failed to load payment QR:', err);
+      }
+    }
+
+    async function uploadPaymentQRCode(e) {
+      e.preventDefault();
+      const fileInput = document.getElementById('qr-file-input');
+      if (!fileInput.files || fileInput.files.length === 0) {
+        alert('Please select an image file for your payment QR code.');
+        return;
+      }
+
+      const btn = document.getElementById('btn-upload-qr');
+      btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Uploading...`;
+      btn.disabled = true;
+
+      const formData = new FormData();
+      formData.append('qrImage', fileInput.files[0]);
+
+      try {
+        const res = await fetch('/api/admin/payment-qr', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${sessionStorage.getItem(API_TOKEN_KEY)}` },
+          body: formData
+        });
+
+        const data = await res.json();
+        if (res.ok) {
+          alert('Payment QR code uploaded and activated successfully!');
+          fileInput.value = '';
+          loadPaymentQR();
+        } else {
+          alert(data.error || 'Failed to upload QR code.');
+        }
+      } catch (err) {
+        alert('Server communication error.');
+      } finally {
+        btn.innerHTML = `<i class="fa-solid fa-cloud-arrow-up"></i> Upload QR Code`;
+        btn.disabled = false;
+      }
+    }
+
+    async function deletePaymentQRCode() {
+      if (!confirm('Are you sure you want to delete and remove the payment QR code? Customers will no longer see it at checkout.')) return;
+
+      const btn = document.getElementById('btn-del-qr');
+      btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i>`;
+      btn.disabled = true;
+
+      try {
+        const res = await fetch('/api/admin/payment-qr', {
+          method: 'DELETE',
+          headers: { 'Authorization': `Bearer ${sessionStorage.getItem(API_TOKEN_KEY)}` }
+        });
+        const data = await res.json();
+        if (res.ok) {
+          alert('Payment QR code deleted successfully.');
+          loadPaymentQR();
+        } else {
+          alert(data.error || 'Failed to delete QR code.');
+        }
+      } catch (err) {
+        alert('Server communication error.');
+      } finally {
+        btn.innerHTML = `<i class="fa-regular fa-trash-can"></i> Delete QR`;
+        btn.disabled = false;
+      }
+    }
+
+    function renderAdminCallDesk() {
+      const container = document.getElementById('admin-call-orders-list');
+      if (!container) return;
+
+      const callOrders = currentOrdersList.filter(o => {
+        const method = (o.payment_method || '').toLowerCase();
+        const terms = (o.payment_terms || '').toLowerCase();
+        return method.includes('call') || terms.includes('call');
+      });
+
+      if (callOrders.length === 0) {
+        container.innerHTML = `
+          <div class="p-6 rounded-xl bg-black/40 border border-white/5 text-center text-slate-400 text-xs">
+            <i class="fa-regular fa-circle-check text-2xl text-emerald-400 mb-2 block"></i>
+            <p class="font-medium text-slate-300">All caught up! No pending admin call requests.</p>
+            <p class="text-[10px] text-slate-500 mt-0.5">When customers select "Payment via Admin Call", they will appear here instantly.</p>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = callOrders.map(o => {
+        const { date, time } = formatDateTime(o.created_at || o.createdAt || o.date);
+        return `
+          <div class="p-3 rounded-xl bg-black/50 border border-amber-500/30 hover:border-amber-500 transition flex items-center justify-between gap-3 text-xs">
+            <div class="min-w-0">
+              <div class="flex items-center gap-2">
+                <span class="font-bold text-white">#AERO-${o.id}</span>
+                <span class="text-brandGold font-medium truncate">${o.customer_name}</span>
+                <span class="text-[10px] px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40">Admin Call</span>
+              </div>
+              <p class="text-[11px] text-slate-400 truncate mt-0.5">${o.product_title} &bull; ${o.city} &bull; <span class="font-mono text-slate-500">${date} ${time}</span></p>
+            </div>
+            <div class="flex items-center gap-2 flex-shrink-0">
+              <a href="tel:${o.phone}" class="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs transition flex items-center gap-1.5 shadow">
+                <i class="fa-solid fa-phone"></i> Call Now
+              </a>
+              <button onclick="openDispatchModal(${o.id})" class="p-1.5 text-slate-400 hover:text-white transition" title="Open Logistics Desk">
+                <i class="fa-solid fa-truck-fast"></i>
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
     }
 
     /* -------------------------------------------------------------
@@ -1458,6 +1688,7 @@
         currentOrdersList = orders || [];
 
         renderTaxesTable();
+        renderAdminCallDesk();
 
         if (!orders || orders.length === 0) {
           tbody.innerHTML = `<tr><td colspan="6" class="p-8 text-center text-slate-400">No customer orders placed yet.</td></tr>`;
@@ -1470,6 +1701,8 @@
           const packagingType = getOrderPackaging(o);
           const isCancelled = (o.status || '').toLowerCase().includes('cancel');
           const paymentTerm = o.payment_terms || 'Prepaid';
+          const paymentMethod = o.payment_method || 'Pending';
+          const isAdminCallRequested = paymentMethod.toLowerCase().includes('call') || paymentTerm.toLowerCase().includes('call');
           const logisticsActive = o.is_logistics_enabled !== 0;
 
           const unitPrice = Number(o.unit_price) || 0;
@@ -1489,6 +1722,23 @@
               <div class="font-semibold text-white">${o.customer_name}</div>
               <div class="text-xs text-brandGold"><i class="fa-solid fa-phone text-[10px] mr-1"></i>${o.phone}</div>
               <div class="text-xs text-slate-400">${o.email || 'No email provided'}</div>
+
+              <!-- High-Visibility Payment via Admin Call Alert Badge -->
+              ${isAdminCallRequested ? `
+                <div class="mt-2 p-2 rounded-lg bg-amber-500/15 border border-amber-500/40 text-amber-300 text-xs font-semibold flex items-center justify-between gap-2 shadow">
+                  <span class="flex items-center gap-1.5 text-[11px]">
+                    <i class="fa-solid fa-phone-volume animate-pulse text-amber-400"></i> CALL CUSTOMER
+                  </span>
+                  <a href="tel:${o.phone}" class="px-2 py-0.5 rounded bg-amber-500 text-black font-bold text-[10px] hover:bg-yellow-400 uppercase tracking-wider flex items-center gap-1 shadow">
+                    <i class="fa-solid fa-phone"></i> Call Now
+                  </a>
+                </div>
+              ` : `
+                <div class="mt-1 text-[11px] text-slate-400 flex items-center gap-1">
+                  <i class="fa-solid fa-wallet text-[10px] text-brandGold"></i>
+                  <span>Mode: <strong class="text-slate-300">${paymentMethod}</strong></span>
+                </div>
+              `}
             </td>
             <td class="p-4 align-top max-w-xs">
               <div class="text-xs text-slate-200 leading-relaxed">${o.address}</div>
@@ -1617,7 +1867,8 @@
       const { date, time } = formatDateTime(order.created_at || order.createdAt || order.date);
       const packagingType = getOrderPackaging(order);
       const logisticsActive = order.is_logistics_enabled !== 0;
-      const paymentTerm = order.payment_terms || order.payment_method || 'Prepaid (UPI / Card / NetBanking)';
+      const paymentTerm = order.payment_terms || 'Prepaid (UPI / Card / NetBanking)';
+      const paymentMethod = order.payment_method || 'Pending';
 
       document.getElementById('inv-order-id').innerText = `#AERO-${order.id}`;
       document.getElementById('inv-order-date').innerText = `Placed on ${date} at ${time}`;
@@ -1636,12 +1887,19 @@
 
       // Dedicated Payment Terms Box
       document.getElementById('inv-box-payment-terms').innerText = paymentTerm;
+      document.getElementById('inv-box-payment-choice').innerText = paymentMethod;
+
       const isCod = paymentTerm.toLowerCase().includes('cod') || paymentTerm.toLowerCase().includes('cash');
       const isDirect = paymentTerm.toLowerCase().includes('direct');
+      const isCall = paymentMethod.toLowerCase().includes('call') || paymentTerm.toLowerCase().includes('call');
       const badge = document.getElementById('inv-box-payment-badge');
       const billingStatus = document.getElementById('inv-box-billing-status');
 
-      if (isCod) {
+      if (isCall) {
+        badge.innerText = 'Admin Call Required';
+        badge.className = 'inline-block px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-300';
+        billingStatus.innerText = 'Pending Phone Call';
+      } else if (isCod) {
         badge.innerText = 'COD / Post-Paid';
         badge.className = 'inline-block px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-300';
         billingStatus.innerText = 'Pay on Delivery';
@@ -1939,10 +2197,10 @@
 
     function selectPaymentPreset(termText, btnElement) {
       document.querySelectorAll('.payment-btn').forEach(btn => {
-        btn.className = 'payment-btn py-1.5 rounded-md bg-[#1d2537] hover:bg-[#28334b] border border-slate-700 text-slate-200 font-medium text-center';
+        btn.className = 'payment-btn py-1.5 rounded-md bg-[#1d2537] hover:bg-[#28334b] border border-slate-700 text-slate-200 font-medium text-center truncate';
       });
       if (btnElement) {
-        btnElement.className = 'payment-btn py-1.5 rounded-md bg-brandGold text-black font-semibold border border-brandGold text-center';
+        btnElement.className = 'payment-btn py-1.5 rounded-md bg-brandGold text-black font-semibold border border-brandGold text-center truncate';
       }
       document.getElementById('modal-payment-terms').value = termText;
     }
@@ -1996,17 +2254,19 @@
 
       document.getElementById('modal-awb').value = order.awb_number || '';
       
-      const paymentTerm = order.payment_terms || order.payment_method || 'Prepaid (UPI / Card / NetBanking)';
+      const paymentTerm = order.payment_terms || 'Prepaid (UPI / Card / NetBanking)';
       document.getElementById('modal-payment-terms').value = paymentTerm;
       document.querySelectorAll('.payment-btn').forEach(btn => {
         if (btn.innerText.trim() === 'Prepaid' && paymentTerm.toLowerCase().includes('prepaid')) {
-          btn.className = 'payment-btn py-1.5 rounded-md bg-brandGold text-black font-semibold border border-brandGold text-center';
+          btn.className = 'payment-btn py-1.5 rounded-md bg-brandGold text-black font-semibold border border-brandGold text-center truncate';
+        } else if (btn.innerText.trim() === 'Admin Call' && paymentTerm.toLowerCase().includes('call')) {
+          btn.className = 'payment-btn py-1.5 rounded-md bg-brandGold text-black font-semibold border border-brandGold text-center truncate';
         } else if (btn.innerText.trim() === 'COD' && paymentTerm.toLowerCase().includes('cod')) {
-          btn.className = 'payment-btn py-1.5 rounded-md bg-brandGold text-black font-semibold border border-brandGold text-center';
-        } else if (btn.innerText.trim() === 'Standard Direct' && paymentTerm.toLowerCase().includes('direct')) {
-          btn.className = 'payment-btn py-1.5 rounded-md bg-brandGold text-black font-semibold border border-brandGold text-center';
+          btn.className = 'payment-btn py-1.5 rounded-md bg-brandGold text-black font-semibold border border-brandGold text-center truncate';
+        } else if (btn.innerText.trim() === 'Direct' && paymentTerm.toLowerCase().includes('direct')) {
+          btn.className = 'payment-btn py-1.5 rounded-md bg-brandGold text-black font-semibold border border-brandGold text-center truncate';
         } else {
-          btn.className = 'payment-btn py-1.5 rounded-md bg-[#1d2537] hover:bg-[#28334b] border border-slate-700 text-slate-200 font-medium text-center';
+          btn.className = 'payment-btn py-1.5 rounded-md bg-[#1d2537] hover:bg-[#28334b] border border-slate-700 text-slate-200 font-medium text-center truncate';
         }
       });
 

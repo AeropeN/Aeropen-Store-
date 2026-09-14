@@ -417,6 +417,98 @@
     </div>
   </div>
 
+  <!-- PAYMENT SELECTION MODAL (DISPLAYS ONLY AFTER FILLING DETAILS & CLICKING CONFIRM) -->
+  <div id="payment-options-modal" class="fixed inset-0 z-50 bg-black/85 backdrop-blur-md hidden items-center justify-center p-4 no-print">
+    <div class="bg-[#11141A] border border-brandGold/30 rounded-2xl max-w-md w-full p-6 md:p-8 relative shadow-2xl text-center">
+      
+      <!-- Order Placed Success Badge -->
+      <div class="w-14 h-14 rounded-full bg-brandGold/10 border border-brandGold/40 text-brandGold flex items-center justify-center mx-auto mb-4 text-2xl shadow-lg">
+        <i class="fa-solid fa-check"></i>
+      </div>
+
+      <span class="text-brandGold text-[11px] uppercase tracking-[0.25em] font-semibold">Order Placed Successfully</span>
+      <h3 class="font-serif text-2xl text-white mt-1">Select Payment Method</h3>
+      <p class="text-xs text-brandMuted mt-1 mb-6">
+        Order Reference: <span id="payment-modal-order-ref" class="text-white font-mono font-semibold"></span><br>
+        Payable Amount: <span id="payment-modal-order-amount" class="text-brandGold font-mono font-bold text-sm"></span>
+      </p>
+
+      <!-- View 1: The Two Options -->
+      <div id="payment-choice-container" class="space-y-4">
+        <!-- Option 1: Payment QR -->
+        <button 
+          type="button" 
+          onclick="choosePaymentOption('Payment QR')" 
+          class="w-full p-4 rounded-xl bg-black/50 hover:bg-black/80 border border-white/15 hover:border-brandGold transition text-left flex items-center gap-4 group">
+          <div class="w-12 h-12 rounded-lg bg-brandGold/10 text-brandGold flex items-center justify-center text-xl group-hover:scale-105 transition flex-shrink-0">
+            <i class="fa-solid fa-qrcode"></i>
+          </div>
+          <div class="flex-1">
+            <h4 class="text-sm font-semibold text-white group-hover:text-brandGold transition">Payment QR</h4>
+            <p class="text-[11px] text-slate-400">Scan our official QR code instantly with any UPI app.</p>
+          </div>
+          <i class="fa-solid fa-chevron-right text-xs text-slate-500 group-hover:text-brandGold transition"></i>
+        </button>
+
+        <!-- Option 2: Payment via Admin Call -->
+        <button 
+          type="button" 
+          onclick="choosePaymentOption('Payment via Admin Call')" 
+          class="w-full p-4 rounded-xl bg-black/50 hover:bg-black/80 border border-white/15 hover:border-brandGold transition text-left flex items-center gap-4 group">
+          <div class="w-12 h-12 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-xl group-hover:scale-105 transition flex-shrink-0">
+            <i class="fa-solid fa-phone-volume"></i>
+          </div>
+          <div class="flex-1">
+            <h4 class="text-sm font-semibold text-white group-hover:text-brandGold transition">Payment via Admin Call</h4>
+            <p class="text-[11px] text-slate-400">Our concierge desk will call you directly to verify & complete payment.</p>
+          </div>
+          <i class="fa-solid fa-chevron-right text-xs text-slate-500 group-hover:text-brandGold transition"></i>
+        </button>
+      </div>
+
+      <!-- View 2: QR Code Display Screen -->
+      <div id="payment-qr-screen" class="hidden space-y-4 text-center">
+        <div class="p-4 bg-white rounded-xl max-w-[240px] mx-auto shadow-xl">
+          <img id="payment-qr-image" src="" alt="Aeropen Official Payment QR" class="w-full h-auto object-contain rounded">
+          <div id="payment-qr-fallback" class="hidden text-slate-800 text-xs py-10 font-medium">
+            <i class="fa-solid fa-circle-notch fa-spin text-brandGold text-lg mb-2"></i>
+            <p>Loading QR Code...</p>
+          </div>
+        </div>
+        <p class="text-xs text-slate-300">Scan with <span class="text-white font-medium">GPay, PhonePe, Paytm, or BHIM UPI</span></p>
+        <p class="text-[11px] text-brandMuted">Once scanned and paid, your order workshop preparation starts immediately.</p>
+        <button 
+          type="button" 
+          onclick="finishPaymentAndTrack()" 
+          class="w-full py-3 rounded-lg bg-brandGold text-black font-semibold text-xs uppercase tracking-wider hover:bg-brandGoldHover transition shadow-lg">
+          I Have Paid / View Parcel Status
+        </button>
+      </div>
+
+      <!-- View 3: Admin Call Confirmation Message -->
+      <div id="payment-call-screen" class="hidden space-y-4 text-center py-4">
+        <div class="w-16 h-16 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 flex items-center justify-center mx-auto text-2xl shadow-lg animate-bounce">
+          <i class="fa-solid fa-headset"></i>
+        </div>
+        <div>
+          <h4 class="font-serif text-3xl text-brandGold font-bold tracking-wide">Thanks, Admin will call you</h4>
+          <p class="text-xs text-slate-300 mt-2 max-w-xs mx-auto leading-relaxed">
+            Our workshop concierge desk has received your request and will call you on your registered phone number shortly to confirm your order and complete payment.
+          </p>
+        </div>
+        <div class="pt-2">
+          <button 
+            type="button" 
+            onclick="finishPaymentAndTrack()" 
+            class="w-full py-3 rounded-lg bg-white/10 hover:bg-brandGold hover:text-black text-white font-semibold text-xs uppercase tracking-wider transition shadow-lg">
+            Track Order Status
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
   <!-- CUSTOMER ORDER EDIT MODAL (1-HOUR LIMIT) -->
   <div id="customer-edit-modal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden items-center justify-center p-4 no-print">
     <div class="bg-[#11141A] border border-white/20 rounded-2xl max-w-lg w-full max-h-[92vh] overflow-y-auto p-6 md:p-8 relative shadow-2xl">
@@ -568,6 +660,10 @@
     let availableProducts = [];
     let currentTrackingOrder = null;
 
+    // Stores recent order placed to handle payment selection
+    let activeCreatedOrderId = null;
+    let activeCreatedOrderRef = null;
+
     // Global Duty Taxes, Round Off & Courier Settings (Default 9% SGST and 9% CGST)
     let globalTaxSettings = {
       cgst_rate: 9.0,
@@ -626,7 +722,7 @@
       if (!val) return new Date();
       if (val instanceof Date) return val;
       if (typeof val === 'number') {
-        return new Date(val < 1e11 ? dateVal * 1000 : val);
+        return new Date(val < 1e11 ? val * 1000 : val);
       }
       let s = String(val).trim();
       if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(\.\d+)?$/.test(s)) {
@@ -1002,6 +1098,12 @@
                 <span class="text-brandGold font-semibold uppercase tracking-wider text-[11px]">${packagingType}</span>
               </div>
 
+              <!-- Selected Payment Method -->
+              <div class="flex justify-between py-1.5 border-b border-white/5">
+                <span class="text-brandMuted">Payment Mode</span>
+                <span class="text-brandGold font-semibold text-right">${order.payment_method || 'Pending Selection'}</span>
+              </div>
+
               <!-- Payment Terms -->
               <div class="flex justify-between py-1.5 border-b border-white/5">
                 <span class="text-brandMuted">Payment Terms</span>
@@ -1365,10 +1467,11 @@
       modal.classList.remove('flex');
     }
 
+    // Step 1: Submit Customer Details & Place Order Record
     async function submitOrder(e) {
       e.preventDefault();
       const btn = document.getElementById('submit-order-btn');
-      btn.innerText = 'Processing Order...';
+      btn.innerText = 'Registering Order...';
       btn.disabled = true;
 
       const packagingVal = document.getElementById('cust-packaging').value.trim() || 'Pieces';
@@ -1396,16 +1499,22 @@
           body: JSON.stringify(orderData)
         });
         const result = await res.json();
+        
         if (res.ok && (result.orderId || result.order_reference)) {
           const cleanOrderId = result.orderId || (result.order_reference ? result.order_reference.replace(/^#?AERO-?/i, '') : '');
           const formattedId = result.order_reference || `AERO-${cleanOrderId}`;
-          alert(`Order placed successfully!\nReference ID: #${formattedId}`);
+          const grandTotal = result.financials ? `₹${result.financials.totalAmount.toFixed(2)}` : (document.getElementById('modal-calc-total').innerText || '');
+
+          activeCreatedOrderId = cleanOrderId;
+          activeCreatedOrderRef = formattedId;
+
+          // Close order creation modal and reset form
           document.getElementById('order-form').reset();
           closeOrderModal();
 
-          document.getElementById('track-order-id').value = formattedId;
-          handleTrackOrder();
-          document.getElementById('tracking').scrollIntoView({ behavior: 'smooth' });
+          // Open the payment options modal ONLY after full order details are confirmed
+          showPaymentOptionsModal(formattedId, grandTotal);
+
         } else {
           alert(result.error || 'Something went wrong while placing your order.');
         }
@@ -1414,6 +1523,89 @@
       } finally {
         btn.innerText = 'Confirm & Place Order';
         btn.disabled = false;
+      }
+    }
+
+    // Step 2: Show Payment Options Modal
+    function showPaymentOptionsModal(orderRef, totalFormatted) {
+      document.getElementById('payment-modal-order-ref').innerText = `#${orderRef}`;
+      document.getElementById('payment-modal-order-amount').innerText = totalFormatted;
+
+      // Show the choice buttons screen
+      document.getElementById('payment-choice-container').classList.remove('hidden');
+      document.getElementById('payment-qr-screen').classList.add('hidden');
+      document.getElementById('payment-call-screen').classList.add('hidden');
+
+      const modal = document.getElementById('payment-options-modal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    // Step 3: Handle Choice ('Payment QR' or 'Payment via Admin Call')
+    async function choosePaymentOption(chosenMethod) {
+      if (!activeCreatedOrderId) return;
+
+      // Persist chosen payment method in database
+      try {
+        fetch(`/api/orders/${activeCreatedOrderId}/payment-method`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ payment_method: chosenMethod })
+        });
+      } catch (e) {
+        console.warn('Could not update payment mode in DB:', e);
+      }
+
+      document.getElementById('payment-choice-container').classList.add('hidden');
+
+      if (chosenMethod === 'Payment QR') {
+        const qrScreen = document.getElementById('payment-qr-screen');
+        const qrImg = document.getElementById('payment-qr-image');
+        const qrFallback = document.getElementById('payment-qr-fallback');
+
+        qrScreen.classList.remove('hidden');
+        qrImg.classList.add('hidden');
+        qrFallback.classList.remove('hidden');
+
+        // Fetch active payment QR from server
+        try {
+          const res = await fetch('/api/payment-qr');
+          const data = await res.json();
+          if (data && data.qr_code_url) {
+            qrImg.src = data.qr_code_url;
+            qrImg.onload = () => {
+              qrFallback.classList.add('hidden');
+              qrImg.classList.remove('hidden');
+            };
+          } else {
+            qrFallback.innerHTML = `
+              <div class="py-6 text-brandDark">
+                <i class="fa-solid fa-qrcode text-3xl mb-2 text-brandGold"></i>
+                <p class="font-medium text-xs">Official payment QR code will be provided shortly.</p>
+                <p class="text-[10px] text-slate-500 mt-1">Our concierge team will also assist you.</p>
+              </div>
+            `;
+          }
+        } catch (e) {
+          qrFallback.innerHTML = `<p class="text-xs text-red-600 py-4">Unable to load QR image. Please contact concierge.</p>`;
+        }
+
+      } else if (chosenMethod === 'Payment via Admin Call') {
+        // Show message: "Thanks, Admin will call you"
+        document.getElementById('payment-call-screen').classList.remove('hidden');
+      }
+    }
+
+    // Step 4: Finish Payment Choice & Scroll into Live Parcel Tracking
+    function finishPaymentAndTrack() {
+      const modal = document.getElementById('payment-options-modal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+
+      if (activeCreatedOrderRef) {
+        document.getElementById('track-order-id').value = activeCreatedOrderRef;
+        handleTrackOrder();
+        document.getElementById('tracking').scrollIntoView({ behavior: 'smooth' });
       }
     }
 
