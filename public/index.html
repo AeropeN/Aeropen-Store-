@@ -742,6 +742,43 @@
     let availableProducts = [];
     let currentTrackingOrder = null;
 
+    // Gallery state tracking for products with multiple photos
+    window.penImagesMap = {};
+    window.penActiveIndexMap = {};
+
+    function switchPenImage(penId, index) {
+      const imgEl = document.getElementById(`pen-main-img-${penId}`);
+      const images = window.penImagesMap[penId] || [];
+      if (!imgEl || !images[index]) return;
+      imgEl.src = images[index];
+      window.penActiveIndexMap[penId] = index;
+
+      // Update thumbnail active styles
+      const thumbs = document.querySelectorAll(`.pen-thumb-${penId}`);
+      thumbs.forEach((t, i) => {
+        if (i === index) {
+          t.classList.add('border-brandGold', 'ring-1', 'ring-brandGold');
+          t.classList.remove('border-white/20', 'opacity-60');
+        } else {
+          t.classList.remove('border-brandGold', 'ring-1', 'ring-brandGold');
+          t.classList.add('border-white/20', 'opacity-60');
+        }
+      });
+
+      // Update counter
+      const counterEl = document.getElementById(`pen-img-counter-${penId}`);
+      if (counterEl) counterEl.innerText = `${index + 1} / ${images.length}`;
+    }
+
+    function stepPenImage(penId, step, evt) {
+      if (evt) evt.stopPropagation();
+      const images = window.penImagesMap[penId] || [];
+      if (images.length <= 1) return;
+      let currentIndex = window.penActiveIndexMap[penId] || 0;
+      currentIndex = (currentIndex + step + images.length) % images.length;
+      switchPenImage(penId, currentIndex);
+    }
+
     // Stores recent order placed to handle payment selection
     let activeCreatedOrderId = null;
     let activeCreatedOrderRef = null;
@@ -1495,7 +1532,7 @@
       }
     }
 
-    // Pen Catalog Loading
+    // Pen Catalog Loading with Multi-Photo Gallery Support
     async function loadPens() {
       const grid = document.getElementById('pens-grid');
       try {
@@ -1509,18 +1546,87 @@
         }
 
         grid.innerHTML = pens.map(pen => {
-          let images = Array.isArray(pen.images) ? pen.images : (pen.image_url ? [pen.image_url] : []);
-          if (images.length === 0) images = ['https://images.unsplash.com/photo-1457298483369-0a95d2b17fcd?q=80&w=1000'];
-          const mainImg = images[0];
+          let images = [];
+          if (Array.isArray(pen.images)) {
+            images = pen.images.filter(Boolean);
+          } else if (typeof pen.images === 'string' && pen.images.trim()) {
+            try {
+              const parsed = JSON.parse(pen.images);
+              images = Array.isArray(parsed) ? parsed.filter(Boolean) : [pen.images.trim()];
+            } catch (e) {
+              images = pen.images.split(',').map(s => s.trim()).filter(Boolean);
+            }
+          } else if (pen.image_url) {
+            images = [pen.image_url.trim()];
+          }
+
+          if (images.length === 0) {
+            images = ['https://images.unsplash.com/photo-1457298483369-0a95d2b17fcd?q=80&w=1000'];
+          }
+
+          // Register in global image maps
+          window.penImagesMap[pen.id] = images;
+          window.penActiveIndexMap[pen.id] = 0;
+
+          const hasMultiplePhotos = images.length > 1;
 
           return `
             <div class="bg-brandCard border border-white/10 rounded-2xl overflow-hidden hover:border-brandGold/50 transition-all duration-300 group flex flex-col justify-between">
-              <div class="relative overflow-hidden aspect-[4/3] bg-black/30">
-                <img src="${mainImg}" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1457298483369-0a95d2b17fcd?q=80&w=1000';" alt="${pen.title}" class="w-full h-full object-cover">
-                <span class="absolute top-4 left-4 z-10 bg-black/75 backdrop-blur-sm text-[10px] uppercase tracking-widest font-semibold px-3 py-1 rounded-full text-brandGold border border-brandGold/20">
-                  ${pen.category || 'Luxury Edition'}
-                </span>
+              <!-- Main Image Showcase -->
+              <div>
+                <div class="relative overflow-hidden aspect-[4/3] bg-black/30 select-none">
+                  <img id="pen-main-img-${pen.id}" 
+                       src="${images[0]}" 
+                       onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1457298483369-0a95d2b17fcd?q=80&w=1000';" 
+                       alt="${pen.title}" 
+                       class="w-full h-full object-cover transition duration-300">
+                  
+                  <span class="absolute top-4 left-4 z-10 bg-black/75 backdrop-blur-sm text-[10px] uppercase tracking-widest font-semibold px-3 py-1 rounded-full text-brandGold border border-brandGold/20">
+                    ${pen.category || 'Luxury Edition'}
+                  </span>
+
+                  ${hasMultiplePhotos ? `
+                    <!-- Photo Counter Badge -->
+                    <span id="pen-img-counter-${pen.id}" class="absolute top-4 right-4 z-10 bg-black/80 backdrop-blur-sm text-[10px] font-mono font-medium px-2.5 py-0.5 rounded-full text-slate-200 border border-white/10">
+                      1 / ${images.length}
+                    </span>
+
+                    <!-- Previous Photo Arrow -->
+                    <button type="button" 
+                            onclick="stepPenImage(${pen.id}, -1, event)" 
+                            class="absolute left-2.5 top-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-full bg-black/60 hover:bg-brandGold text-white hover:text-black flex items-center justify-center text-xs transition duration-200 shadow-md backdrop-blur-sm border border-white/10"
+                            title="Previous photo">
+                      <i class="fa-solid fa-chevron-left"></i>
+                    </button>
+
+                    <!-- Next Photo Arrow -->
+                    <button type="button" 
+                            onclick="stepPenImage(${pen.id}, 1, event)" 
+                            class="absolute right-2.5 top-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-full bg-black/60 hover:bg-brandGold text-white hover:text-black flex items-center justify-center text-xs transition duration-200 shadow-md backdrop-blur-sm border border-white/10"
+                            title="Next photo">
+                      <i class="fa-solid fa-chevron-right"></i>
+                    </button>
+                  ` : ''}
+                </div>
+
+                ${hasMultiplePhotos ? `
+                  <!-- Thumbnails Strip to View All Uploaded Photos -->
+                  <div class="flex items-center gap-2 px-6 pt-3 pb-0 overflow-x-auto no-scrollbar">
+                    ${images.map((img, idx) => `
+                      <button type="button" 
+                              onclick="switchPenImage(${pen.id}, ${idx})" 
+                              class="pen-thumb-${pen.id} flex-shrink-0 w-12 h-12 rounded-lg overflow-hidden border ${idx === 0 ? 'border-brandGold ring-1 ring-brandGold' : 'border-white/20 opacity-60 hover:opacity-100'} transition duration-200">
+                        <img src="${img}" 
+                             onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1457298483369-0a95d2b17fcd?q=80&w=1000';" 
+                             alt="Thumbnail ${idx + 1}" 
+                             class="w-full h-full object-cover">
+                      </button>
+                    `).join('')}
+                  </div>
+                ` : ''}
               </div>
+
+              <!-- Product Details -->
               <div class="p-6 flex-1 flex flex-col justify-between">
                 <div>
                   <div class="flex justify-between items-baseline gap-2">
